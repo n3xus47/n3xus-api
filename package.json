@@ -1,0 +1,16 @@
+{
+  "name": "n3xus-api-orchestration",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Local Sandcastle orchestration for n3xusAPI development.",
+  "type": "module",
+  "scripts": {
+    "test": ".venv/bin/pytest -q",
+    "typecheck": ".venv/bin/python -m compileall -q app",
+    "sandcastle": "npx tsx .sandcastle/main.mts"
+  },
+  "devDependencies": {
+    "@ai-hero/sandcastle": "^0.12.0",
+    "tsx": "^4.23.13"
+  }
+}
