@@ -76,7 +76,7 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
         ], [
             {"url": "https://a.example/page", "status": "returned"},
             {"url": "https://b.example/page", "status": "returned"},
-        ]
+        ], None
 
     async def fake_generate(prompt, json_mode=False):
         if json_mode:
