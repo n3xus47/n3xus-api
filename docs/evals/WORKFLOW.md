@@ -33,4 +33,4 @@ source-specific fields rather than generic page text when evaluating adapters.
 
 The single public example-domain fixture proves the harness path only. The full
 M1 corpus and baseline belong to issue #2; this smoke report is not that baseline.
-README support documentation remains scoped to issue #3.
+Support levels and evaluation workflow are documented in the root `README.md`.

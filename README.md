@@ -23,6 +23,34 @@ Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publiczneg
 
 Odpowiedzi zachowują podstawowy envelope (`requestId`, `route`, `capability`, `status`, `output`, `error`). Każdy niedry-run `POST` wymaga nagłówka `Idempotency-Key`; identyczne wywołanie zwraca zachowany rezultat. Lokalne wywołania są bezpłatne, dlatego `debitMicrousd` wynosi `0`.
 
+## Poziomy wsparcia
+
+Każda możliwość ma przypisany poziom w rejestrze zwracanym przez `GET /v1/capabilities` (pole `supportLevel`). Opcjonalnie filtruj: `GET /v1/capabilities?capability=scrape.amazon`. Poziomy opisują **jakość kontraktu danych**, a nie sam fakt, że endpoint istnieje.
+
+| Poziom | Znaczenie |
+| --- | --- |
+| `structured` | Normalizowane rekordy z oczekiwanymi polami; adapter jest źródłowo specyficzny (np. GitHub REST, yt-dlp). |
+| `best_effort` | Publiczny fetch strony lub ograniczone API; wynik może być niepełny lub ogólny — **nie traktuj go jak pełnego rekordu produktu, posta czy miejsca Google**. |
+| `experimental` | Lokalny model lub heurystyka (Ollama, browser act); jakość zależy od konfiguracji. |
+| `unavailable` | Celowo nieobsługiwane lokalnie (np. weryfikacja skrzynki); wywołanie zwraca błąd kontraktu zamiast zgadywać dane. |
+
+Pole `limitations` i `adapter` w tym samym obiekcie wyjaśniają źródło i znane ograniczenia. Pełna mapa luk względem komercyjnych API: `docs/deepapi-parity-audit.md`.
+
+## Pochodzenie danych (`source`)
+
+Gdy dane pochodzą z zewnętrznego publicznego źródła, udane odpowiedzi mogą zawierać blok `source` (na poziomie envelope lub w `output`):
+
+- `name` — identyfikator adaptera (np. `github-public-rest`, `openstreetmap-nominatim`);
+- `urls` — adresy użyte przy pobraniu;
+- `retrievedAt` — znacznik czasu ISO 8601 (UTC);
+- `collectionState` — jak poszło pobranie:
+  - `complete` — zebrano oczekiwane dane;
+  - `partial` — część pól lub stron brakuje;
+  - `blocked` — źródło odmówiło dostępu (limit, CAPTCHA, polityka);
+  - `empty` — legalny brak wyników (np. puste wyszukiwanie).
+
+Brak bloku `source` oznacza, że provenance nie zostało jeszcze znormalizowane dla tej trasy — **nie uzupełniaj go samodzielnie**. Pusty wynik z `collectionState: empty` to uczciwy stan, nie błąd klienta.
+
 ## Uruchomienie
 
 ```bash
@@ -40,6 +68,19 @@ curl -X POST http://localhost:8000/v1/scrape/website \
   -H 'Content-Type: application/json' \
   -d '{"urls":"https://example.com","contentFormat":"markdown"}'
 ```
+
+## Ewaluacja jakości danych
+
+Reprodukowalny harness mierzy obecność wymaganych pól, latencję i powody niepowodzeń na **legalnych, publicznych** celach — bez sekretów i credentials.
+
+```bash
+docker compose up --build   # API musi działać na localhost
+npm run eval -- --fixtures evals/smoke.json --output docs/evals/latest.md
+```
+
+Domyślnie: `http://127.0.0.1:8000`, timeout klienta 120 s na operację sieciową. Szczegóły metryk, fixture JSON i interpretacja raportu: `docs/evals/WORKFLOW.md`. Przykładowy raport smoke: `docs/evals/harness-smoke.md`.
+
+**Ważne:** sukces w ewaluacji wymaga `status: succeeded`, wszystkich wymaganych pól **oraz** braku `collectionState` równego `partial`, `blocked` lub `empty`. Raport **nie podnosi** poziomu `supportLevel` — sukces `best_effort` nie oznacza akceptacji jako danych `structured`. Pełny korpus M1 i baseline jakości to osobny krok w backlogu; smoke tylko weryfikuje ścieżkę harnessu.
 
 ## Granice
 
