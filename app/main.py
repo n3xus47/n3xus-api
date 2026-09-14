@@ -32,6 +32,7 @@ from app.research import research as deep_research
 from app.scraper import scrape_website, website_collection_state
 from app.search import SearchError, search_web
 from app.seo import competitors as seo_competitors, rank as seo_rank
+from app.seo_adapters import keyword_metrics as seo_keyword_metrics, provenance_name as seo_provenance_name
 from app.store import (create_email_domain, create_email_identity, delete_email_domain, delete_memory,
                        find_idempotent, get_email_domain, get_email_draft, get_memory, list_email_domains,
                        list_email_drafts, list_email_identities, list_email_messages, list_memory, list_requests,
@@ -383,6 +384,12 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         source = provenance(source_name, urls, "complete" if urls else "empty")
     elif source_name:
         source = provenance(source_name, state=collection_state)
+    elif capability == "seo.read" and isinstance(output, dict):
+        adapter_id = output.get("adapterId")
+        source = provenance(
+            seo_provenance_name(adapter_id) if isinstance(adapter_id, str) else "seo-policy",
+            state=collection_state,
+        )
     else:
         source = None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)
@@ -554,9 +561,7 @@ async def seo_keyword(payload: dict, raw: Request):
     keywords = payload.get("keywords")
     if not isinstance(keywords, list) or not keywords or len(keywords) > 100 or not all(isinstance(item, str) for item in keywords):
         return failure(raw.url.path, "seo.read", "invalid_request", "keywords must contain 1-100 strings.", 400)
-    async def action():
-        return {"keywords": [{"keyword": keyword, "monthlySearches": None, "cpc": None, "difficulty": None, "intent": None, "dataSource": "not_available_in_free_local_mode"} for keyword in keywords]}
-    return await public_source_response(raw.url.path, "seo.read", payload, raw, action)
+    return await public_source_response(raw.url.path, "seo.read", payload, raw, lambda: seo_keyword_metrics(keywords))
 
 
 @app.post("/v1/seo/rank")
@@ -591,7 +596,7 @@ async def seo_audit(payload: dict, raw: Request):
         return failure(raw.url.path, "seo.read", "invalid_request", "keyword is required.", 400)
     async def action():
         ranking = await seo_rank(keyword, payload.get("domain", ""), 10)
-        return {"keyword": keyword, "ranking": ranking, "recommendations": None, "dataSource": "local-search"}
+        return {"keyword": keyword, "ranking": ranking, "recommendations": None, "adapterId": ranking.get("adapterId")}
     return await public_source_response(raw.url.path, "seo.read", payload, raw, action)
 
 

@@ -125,7 +125,16 @@ REGISTRY = (
         ),
         "company-enrich",
     ),
-    Capability("seo.read", "best_effort", "searxng-ollama", ("Keyword volume, CPC, difficulty and trend data are unavailable.",), "seo"),
+    Capability(
+        "seo.read",
+        "best_effort",
+        "searxng-local-serp",
+        (
+            "SERP rank and competitor domains use the approved local SearxNG adapter only; see docs/seo-provider-strategy.md.",
+            "Keyword volume, CPC, difficulty, trend and overlap metrics stay null until a commercial adapter is approved in the registry.",
+        ),
+        "seo",
+    ),
     Capability(
         "browser.act",
         "experimental",
