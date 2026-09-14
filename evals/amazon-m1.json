@@ -1,0 +1,162 @@
+[
+  {
+    "id": "amazon-01",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "python programming book",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-02",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "linux administration",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-03",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "open source",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-04",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "keyboard mechanical",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-05",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "coffee maker",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-06",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "running shoes",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-07",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "board games",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-08",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "science fiction novel",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-09",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "wireless mouse",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  },
+  {
+    "id": "amazon-10",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "cooking cookbook",
+      "maxItems": 5
+    },
+    "required": [
+      "output.marketplace",
+      "output.listings.*.asin",
+      "output.listings.*.title",
+      "output.listings.*.url",
+      "output.coverage"
+    ]
+  }
+]

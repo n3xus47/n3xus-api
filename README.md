@@ -9,7 +9,7 @@ Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publiczneg
 - `POST /v1/scrape/github/*` — publiczny GitHub API: profile, repozytoria, issues, pull requests, commity, zawartość i wyszukiwanie.
 - `POST /v1/scrape/youtube/*` — transkrypcje, metadane kanałów/wyszukiwania/Shorts oraz miniatury.
 - `POST /v1/scrape/pdf` — tekstowa warstwa publicznych PDF-ów.
-- `POST /v1/scrape/{twitter,instagram,tiktok,facebook,amazon}/*`, `/v1/scrape/threads/posts`, `/v1/scrape/open-business/search` oraz alias `/v1/scrape/google/places` — bezpłatne adaptery do publicznych stron; rekordy firm/punktów pochodzą z OpenStreetMap/Nominatim (nie z Google Places), z jawna atrybucją OSM.
+- `POST /v1/scrape/{twitter,instagram,tiktok,facebook,amazon}/*`, `/v1/scrape/threads/posts`, `/v1/scrape/open-business/search` oraz alias `/v1/scrape/google/places` — bezpłatne adaptery do publicznych stron. Amazon zwraca znormalizowane listingi/produkty/recenzje z publicznych stron (US/UK/DE); przy blokadzie CAPTCHA — pusty wynik ze stanem `blocked`, bez surowego tekstu strony. Rekordy open-business pochodzą z OpenStreetMap/Nominatim (nie z Google Places), z jawną atrybucją OSM.
 - `POST /v1/research/deep` i `/v1/scrape/extract` — badanie oparte na źródłach oraz ekstrakcja JSON przez lokalny Ollama.
 - `POST /v1/email/*` — lokalne szkice oraz wysyłka przez własny SMTP po ustawieniu `N3XUS_API_SMTP_URL` i utworzeniu tożsamości. Wyszukiwanie kontaktu sprawdza wyłącznie jawnie opublikowane adresy na stronie firmy; nie zgaduje adresów ani nie używa brokerów danych.
 - `POST /v1/seo/*` — lokalny ranking i konkurenci oparte na SearxNG; bezpłatne źródła nie publikują wiarygodnych wolumenów i CPC, więc te pola mają wartość `null`.

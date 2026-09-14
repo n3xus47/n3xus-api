@@ -20,9 +20,9 @@ async def test_metrics_count_every_record_and_do_not_upgrade_support():
         results = await evaluate(client, [case(capability="scrape.amazon")]*2)
     assert results[0]["coverage"] == 0.75
     assert not results[0]["success"]
-    assert results[0]["supportLevel"] == "best_effort"
+    assert results[0]["supportLevel"] == "structured"
     assert keys[0] != keys[1]
-    assert "best_effort" in render_report(results)
+    assert "structured" in render_report(results)
 
 
 @pytest.mark.parametrize("body, reason", [

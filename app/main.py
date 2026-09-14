@@ -296,17 +296,23 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "email_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
+    collection_state = "complete"
+    if isinstance(output, dict) and isinstance(output.get("collectionState"), str):
+        collection_state = output["collectionState"]
+        output = {key: value for key, value in output.items() if key != "collectionState"}
+    elif not output:
+        collection_state = "empty"
     source_name = {
         "scrape.google": "openstreetmap-nominatim",
         "scrape.open-business": "openstreetmap-nominatim",
-        "scrape.amazon": "public-amazon-pages",
+        "scrape.amazon": "public-amazon-structured",
         "scrape.twitter": "public-x-pages",
         "scrape.instagram": "public-instagram-pages",
         "scrape.facebook": "public-facebook-pages",
         "scrape.tiktok": "public-tiktok-pages",
         "scrape.threads": "public-threads-pages",
     }.get(capability)
-    source = provenance(source_name, state="complete" if output else "empty") if source_name else None
+    source = provenance(source_name, state=collection_state) if source_name else None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)
 
 

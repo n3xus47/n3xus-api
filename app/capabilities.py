@@ -29,7 +29,17 @@ REGISTRY = (
     Capability("scrape.instagram", "best_effort", "public-page-fetch", ("This is not a structured Instagram data collector.",), "social"),
     Capability("scrape.facebook", "best_effort", "public-page-fetch-search", ("This is not a structured Meta Ads or group-post collector.",), "social"),
     Capability("scrape.tiktok", "best_effort", "public-page-fetch", ("This is not a structured TikTok data collector.",), "social"),
-    Capability("scrape.amazon", "best_effort", "public-page-fetch-search", ("This is not a structured Amazon product or review collector.",), "amazon"),
+    Capability(
+        "scrape.amazon",
+        "structured",
+        "public-amazon-structured",
+        (
+            "Structured Amazon search/product/review records from public pages only.",
+            "US, UK and DE hosts are supported; Amazon may block automated access.",
+            "Blocked or empty pages return no fabricated product data.",
+        ),
+        "amazon",
+    ),
     Capability(
         "scrape.open-business",
         "structured",
