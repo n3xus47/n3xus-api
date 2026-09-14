@@ -48,8 +48,6 @@ def _hit_relevance_score(query: str, hit: dict) -> float:
 
 
 def filter_relevant_hits(query: str, hits: list[dict], *, min_score: float = MIN_RESEARCH_HIT_RELEVANCE) -> list[dict]:
-    if not hits:
-        return []
     return [hit for hit in hits if _hit_relevance_score(query, hit) >= min_score]
 
 
@@ -161,8 +159,7 @@ async def research(query: str, context: str | None) -> dict:
             queries_with_results += 1
         batches.append((search_query, results))
 
-    hits = merge_search_hits(search_plan, batches)
-    hits = filter_relevant_hits(query, hits)
+    hits = filter_relevant_hits(query, merge_search_hits(search_plan, batches))
     selected_urls = pick_source_urls(hits)
     pages: list[Page] = []
     outcomes: list[dict[str, str]] | None = None

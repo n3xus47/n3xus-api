@@ -135,6 +135,16 @@ def query_tokens(query: str) -> list[str]:
     ]
 
 
+def _token_surface_forms(token: str) -> tuple[str, ...]:
+    if len(token) > 3 and token.endswith("s"):
+        return (token, token[:-1])
+    return (token,)
+
+
+def _token_in_text(token: str, text: str) -> bool:
+    return any(form in text for form in _token_surface_forms(token))
+
+
 def relevance_score(query: str, result: SearchResult) -> float:
     tokens = query_tokens(query)
     if not tokens:
@@ -145,27 +155,21 @@ def relevance_score(query: str, result: SearchResult) -> float:
     hay = f"{title} {snippet} {url}"
     score = 0.0
     for token in tokens:
-        token_forms = {token}
-        if len(token) > 3 and token.endswith("s"):
-            token_forms.add(token[:-1])
-        if not any(form in hay for form in token_forms):
+        forms = _token_surface_forms(token)
+        if not any(form in hay for form in forms):
             continue
         score += 1.0
-        if any(form in title for form in token_forms):
+        if any(form in title for form in forms):
             score += 2.0
-        if any(form in url for form in token_forms):
+        if any(form in url for form in forms):
             score += 1.5
-        if any(form in snippet for form in token_forms):
+        if any(form in snippet for form in forms):
             score += 0.5
     for index in range(len(tokens) - 1):
         phrase = f"{tokens[index]} {tokens[index + 1]}"
         if phrase in hay:
             score += 4.0
-    matched = sum(
-        1
-        for token in tokens
-        if token in hay or (len(token) > 3 and token.endswith("s") and token[:-1] in hay)
-    )
+    matched = sum(1 for token in tokens if _token_in_text(token, hay))
     if len(tokens) >= 2 and matched < max(2, len(tokens) // 2):
         score *= 0.35
     return score

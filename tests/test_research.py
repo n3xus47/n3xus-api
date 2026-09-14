@@ -95,8 +95,6 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
     async def fake_plan(_query, _context):
         return ["q1", "q2"]
 
-    from app.search import SearchFusionOutcome
-
     async def fake_search(query, _max):
         if query == "q1":
             return SearchFusionOutcome(
