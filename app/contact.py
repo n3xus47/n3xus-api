@@ -18,7 +18,7 @@ def normalise_domain(value: str) -> str:
 
 async def company(domain: str) -> dict:
     hostname = normalise_domain(domain)
-    pages, _ = await scrape_website(WebsiteScrapeRequest(urls=f"https://{hostname}", contentFormat="markdown", maxChars=20_000))
+    pages, _, _ = await scrape_website(WebsiteScrapeRequest(urls=f"https://{hostname}", contentFormat="markdown", maxChars=20_000))
     if not pages:
         return {"matchStatus": "not_found", "domain": hostname}
     page = pages[0]
@@ -27,7 +27,7 @@ async def company(domain: str) -> dict:
 
 async def find_email(first_name: str, last_name: str, domain: str) -> dict:
     hostname = normalise_domain(domain)
-    pages, _ = await scrape_website(WebsiteScrapeRequest(urls=[f"https://{hostname}", f"https://{hostname}/contact"], contentFormat="text", maxPages=2, maxChars=50_000))
+    pages, _, _ = await scrape_website(WebsiteScrapeRequest(urls=[f"https://{hostname}", f"https://{hostname}/contact"], contentFormat="text", maxPages=2, maxChars=50_000))
     expected = {f"{first_name}.{last_name}".lower(), f"{first_name}{last_name}".lower(), f"{first_name[0]}{last_name}".lower()}
     for page in pages:
         matches = re.findall(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", page.text or "", re.I)

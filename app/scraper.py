@@ -3,7 +3,8 @@ import fnmatch
 import ipaddress
 import socket
 from collections import deque
-from urllib.parse import urldefrag, urljoin, urlparse
+from typing import NamedTuple
+from urllib.parse import urldefrag, urljoin, urlunparse, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
@@ -13,25 +14,75 @@ from readability import Document
 from app.config import settings
 from app.models import Page, WebsiteScrapeRequest
 
+BLOCKED_HTTP_STATUSES = {401, 403, 429, 451}
+BLOCKED_HTML_MARKERS = (
+    "captcha",
+    "access denied",
+    "just a moment",
+    "cf-browser-verification",
+    "attention required",
+    "enable javascript and cookies",
+)
+
 
 class ScrapeError(Exception):
     pass
 
 
+class FetchFailure(ScrapeError):
+    def __init__(self, reason: str, message: str):
+        self.reason = reason
+        super().__init__(message)
+
+
+def normalize_crawl_url(url: str) -> str:
+    """Canonical URL for crawl deduplication; does not validate reachability."""
+    url, _ = urldefrag(url)
+    parsed = urlparse(url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+        return url
+    host = parsed.hostname.lower()
+    port = parsed.port
+    default_port = 443 if parsed.scheme == "https" else 80
+    netloc = host if port in (None, default_port) else f"{host}:{port}"
+    path = parsed.path or "/"
+    if len(path) > 1 and path.endswith("/"):
+        path = path.rstrip("/")
+    return urlunparse((parsed.scheme.lower(), netloc, path, "", parsed.query, ""))
+
+
+def looks_blocked_html(html: str) -> bool:
+    sample = html[:8_000].lower()
+    return any(marker in sample for marker in BLOCKED_HTML_MARKERS)
+
+
+def website_collection_state(pages: list[Page], seed_outcomes: list[dict[str, str]]) -> str:
+    if pages:
+        if not seed_outcomes:
+            return "complete"
+        returned = sum(1 for outcome in seed_outcomes if outcome.get("status") == "returned")
+        if returned == len(seed_outcomes):
+            return "complete"
+        return "partial"
+    if seed_outcomes and all(outcome.get("status") == "blocked" for outcome in seed_outcomes):
+        return "blocked"
+    return "empty"
+
+
 async def assert_public_url(url: str) -> None:
     parsed = urlparse(url)
     if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise ScrapeError("URL must be an absolute HTTP(S) URL")
+        raise FetchFailure("rejected", "URL must be an absolute HTTP(S) URL")
     if parsed.username or parsed.password:
-        raise ScrapeError("URLs with credentials are not supported")
+        raise FetchFailure("rejected", "URLs with credentials are not supported")
     try:
         infos = await asyncio.get_running_loop().getaddrinfo(parsed.hostname, None)
     except socket.gaierror as error:
-        raise ScrapeError("Could not resolve URL host") from error
+        raise FetchFailure("fetch_error", "Could not resolve URL host") from error
     for info in infos:
         address = ipaddress.ip_address(info[4][0])
         if not address.is_global:
-            raise ScrapeError("Private and local network URLs are not supported")
+            raise FetchFailure("rejected", "Private and local network URLs are not supported")
 
 
 async def fetch_html(url: str) -> tuple[str, str]:
@@ -47,14 +98,19 @@ async def fetch_html(url: str) -> tuple[str, str]:
             if response.is_redirect:
                 location = response.headers.get("location")
                 if not location:
-                    raise ScrapeError("Redirect has no location")
+                    raise FetchFailure("fetch_error", "Redirect has no location")
                 current_url = urljoin(current_url, location)
                 continue
+            if response.status_code in BLOCKED_HTTP_STATUSES:
+                raise FetchFailure("blocked", f"HTTP {response.status_code}")
             response.raise_for_status()
             if "html" not in response.headers.get("content-type", ""):
-                raise ScrapeError("URL did not return HTML")
-            return response.text, str(response.url)
-    raise ScrapeError("Too many redirects")
+                raise FetchFailure("non_html", "URL did not return HTML")
+            html = response.text
+            if looks_blocked_html(html):
+                raise FetchFailure("blocked", "Blocked or challenge page detected")
+            return html, str(response.url)
+    raise FetchFailure("fetch_error", "Too many redirects")
 
 
 def extract_page(html: str, url: str, content_format: str | None, max_chars: int) -> Page:
@@ -105,7 +161,79 @@ def to_list(value: str | list[str] | None) -> list[str] | None:
     return [value] if isinstance(value, str) else value
 
 
-async def scrape_website(request: WebsiteScrapeRequest) -> tuple[list[Page], list[dict[str, str]] | None]:
+def _outcome(url: str, status: str, detail: str | None = None) -> dict[str, str]:
+    outcome = {"url": url, "status": status}
+    if detail:
+        outcome["detail"] = detail
+    return outcome
+
+
+def _failure_reason(error: Exception) -> tuple[str, str]:
+    if isinstance(error, FetchFailure):
+        return error.reason, str(error)
+    if isinstance(error, httpx.HTTPStatusError):
+        status = "blocked" if error.response.status_code in BLOCKED_HTTP_STATUSES else "fetch_error"
+        return status, f"HTTP {error.response.status_code}"
+    if isinstance(error, ScrapeError):
+        return "fetch_error", str(error)
+    if isinstance(error, httpx.HTTPError):
+        return "fetch_error", type(error).__name__
+    return "fetch_error", type(error).__name__
+
+
+def _failure_token(reason: str, detail: str | None) -> str:
+    return reason if not detail else f"{reason}:{detail}"
+
+
+def _split_failure_token(token: str) -> tuple[str, str | None]:
+    reason, _, detail = token.partition(":")
+    return reason, detail or None
+
+
+class PageLoadResult(NamedTuple):
+    page: Page | None
+    final_url: str
+    render_detail: str | None
+    failure: str | None
+    html: str | None
+
+
+async def _load_page(url: str, content_format: str | None, max_chars: int) -> PageLoadResult:
+    try:
+        html, final_url = await fetch_html(url)
+    except Exception as error:
+        reason, detail = _failure_reason(error)
+        return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
+
+    page = extract_page(html, final_url, content_format, max_chars)
+    content = page.markdown or page.text or ""
+    render_detail = None
+    if settings.browser_fallback and len(content) < 200:
+        from app.browser import render_html
+
+        try:
+            html, final_url = await render_html(final_url)
+            page = extract_page(html, final_url, content_format, max_chars)
+            render_detail = "js_rendered"
+            content = page.markdown or page.text or ""
+            if looks_blocked_html(html):
+                return PageLoadResult(
+                    None, final_url, None, _failure_token("blocked", "Blocked or challenge page detected"), None
+                )
+        except Exception as error:
+            reason, detail = _failure_reason(error)
+            if content:
+                return PageLoadResult(page, final_url, render_detail, None, html)
+            return PageLoadResult(None, final_url, None, _failure_token(reason, detail), None)
+
+    if not content:
+        return PageLoadResult(None, final_url, render_detail, "empty", html)
+    return PageLoadResult(page, final_url, render_detail, None, html)
+
+
+async def scrape_website(
+    request: WebsiteScrapeRequest,
+) -> tuple[list[Page], list[dict[str, str]], dict[str, int] | None]:
     seeds = request.url_list()
     follows_links = request.max_depth is not None and request.max_depth > 0
     follows_links = follows_links or (
@@ -116,38 +244,65 @@ async def scrape_website(request: WebsiteScrapeRequest) -> tuple[list[Page], lis
     queue = deque((url, 0) for url in seeds)
     visited: set[str] = set()
     pages: list[Page] = []
-    returned_urls: set[str] = set()
+    seed_status: dict[str, dict[str, str]] = {}
     include = to_list(request.include_urls)
     exclude = to_list(request.exclude_urls)
+    deduped_skips = 0
+    seeds_by_canonical: dict[str, list[str]] = {}
+    for seed in seeds:
+        seeds_by_canonical.setdefault(normalize_crawl_url(seed), []).append(seed)
+
+    def mark_seed(canonical: str, status: str, detail: str | None = None) -> None:
+        for seed in seeds_by_canonical.get(canonical, []):
+            seed_status.setdefault(seed, _outcome(seed, status, detail))
+
+    def url_is_seed(original_url: str, canonical: str) -> bool:
+        return original_url in seeds or canonical in seeds_by_canonical
 
     while queue and len(pages) < page_limit:
         url, depth = queue.popleft()
-        if url in visited or not matches(url, include) or (exclude and matches(url, exclude)):
+        canonical = normalize_crawl_url(url)
+        is_seed = url_is_seed(url, canonical)
+        if canonical in visited:
+            deduped_skips += 1
+            if is_seed and url in seeds:
+                existing = next(
+                    (seed_status[s] for s in seeds_by_canonical.get(canonical, []) if s in seed_status),
+                    None,
+                )
+                if existing:
+                    mark_seed(canonical, existing["status"], existing.get("detail"))
             continue
-        visited.add(url)
-        try:
-            html, final_url = await fetch_html(url)
-            page = extract_page(html, final_url, request.content_format, request.max_chars)
-            content = page.markdown or page.text or ""
-            if settings.browser_fallback and len(content) < 200:
-                from app.browser import render_html
+        if not matches(url, include) or (exclude and matches(url, exclude)):
+            continue
+        visited.add(canonical)
 
-                html, final_url = await render_html(url)
-                page = extract_page(html, final_url, request.content_format, request.max_chars)
-        except (httpx.HTTPError, ScrapeError):
+        loaded = await _load_page(url, request.content_format, request.max_chars)
+
+        if loaded.failure:
+            if is_seed:
+                reason, detail = _split_failure_token(loaded.failure)
+                mark_seed(canonical, reason, detail)
             continue
-        if page.markdown or page.text:
-            pages.append(page)
-            returned_urls.add(url)
-        if follows_links and (request.max_depth is None or depth < request.max_depth):
-            for link in links_from(html, final_url):
-                if link not in visited:
+
+        if loaded.page and (loaded.page.markdown or loaded.page.text):
+            pages.append(loaded.page)
+            if is_seed:
+                mark_seed(canonical, "returned", loaded.render_detail)
+        elif is_seed:
+            mark_seed(canonical, "empty", loaded.render_detail)
+
+        if loaded.html and follows_links and (request.max_depth is None or depth < request.max_depth):
+            for link in links_from(loaded.html, loaded.final_url):
+                if normalize_crawl_url(link) not in visited:
                     queue.append((link, depth + 1))
 
-    outcomes = None
-    if not follows_links:
-        outcomes = [
-            {"url": url, "status": "returned" if url in returned_urls else "not_returned"}
-            for url in seeds
-        ]
-    return pages, outcomes
+    seed_outcomes = [_outcome(url, "not_returned") if url not in seed_status else seed_status[url] for url in seeds]
+    crawl_meta = None
+    if follows_links:
+        crawl_meta = {
+            "visitedCount": len(visited),
+            "returnedCount": len(pages),
+            "dedupedSkips": deduped_skips,
+        }
+    return pages, seed_outcomes, crawl_meta
