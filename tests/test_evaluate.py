@@ -1,7 +1,13 @@
+import json
+from pathlib import Path
+
 import httpx
 import pytest
 
+from app.capabilities import get_capability
 from app.evaluate import evaluate, render_report, validate_cases
+
+M1_SUITES = ("website", "search", "github", "youtube", "research", "places", "amazon", "social", "seo")
 
 
 def case(**changes):
@@ -53,3 +59,13 @@ async def test_transport_and_invalid_json_failures_continue():
 def test_invalid_fixtures(changes):
     with pytest.raises(ValueError):
         validate_cases([case(**changes)])
+
+
+def test_m1_corpus_has_ten_public_cases_per_suite():
+    cases = validate_cases(json.loads(Path("evals/m1-corpus.json").read_text()))
+    suites = {name: 0 for name in M1_SUITES}
+    for item in cases:
+        suite = get_capability(item["capability"]).evaluation_suite
+        suites[suite] += 1
+    assert len(cases) == 90
+    assert suites == dict.fromkeys(M1_SUITES, 10)

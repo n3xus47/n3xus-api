@@ -31,6 +31,9 @@ is not a factual accuracy or quality judgment. Registry support levels are shown
 unchanged; best-effort success is not structured-data acceptance. Choose meaningful
 source-specific fields rather than generic page text when evaluating adapters.
 
-The single public example-domain fixture proves the harness path only. The full
-M1 corpus and baseline belong to issue #2; this smoke report is not that baseline.
-README support documentation remains scoped to issue #3.
+The single public example-domain fixture proves the harness path only. The M1
+corpus lives in `evals/m1-corpus.json` (90 lawful public cases, 10 per suite).
+Run `npm run eval -- --fixtures evals/m1-corpus.json --output docs/evals/m1-baseline.md
+--timeout 180` and commit the generated `docs/evals/m1-baseline.md` and
+`docs/evals/m1-baseline.json` as the reproducible baseline. README support
+documentation remains scoped to issue #3.
