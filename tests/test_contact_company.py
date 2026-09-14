@@ -1,4 +1,4 @@
-from app.contact import build_company_profile, company_page_urls, published_emails, sourced
+from app.contact import build_company_profile, company_page_urls, published_emails, sourced, sourced_value
 from app.models import Page
 
 
@@ -7,6 +7,8 @@ def test_sourced_omits_empty_values():
     item = sourced("Example", "https://example.com", "title")
     assert item["value"] == "Example"
     assert item["provenance"]["field"] == "title"
+    assert sourced_value(item) == "Example"
+    assert sourced_value(None) is None
 
 
 def test_published_emails_only_keeps_same_domain_addresses():

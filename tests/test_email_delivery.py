@@ -1,6 +1,7 @@
-from app.email import EmailError, build_delivery_record, smtp_endpoint, DELIVERY_LIMITATION
-from app.config import settings
 import pytest
+
+from app.config import settings
+from app.email import DELIVERY_LIMITATION, EmailError, build_delivery_record, smtp_endpoint
 
 
 def test_build_delivery_record_includes_limitation():

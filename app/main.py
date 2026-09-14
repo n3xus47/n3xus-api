@@ -37,9 +37,21 @@ def envelope(*, route: str, capability: str, output: object = None, status: str 
     ).model_dump(by_alias=True, exclude_none=True)
 
 
-def failure(route: str, capability: str, code: str, hint: str, status_code: int) -> JSONResponse:
+def failure(
+    route: str,
+    capability: str,
+    code: str,
+    hint: str,
+    status_code: int,
+    *,
+    output: object = None,
+) -> JSONResponse:
     body = Envelope(
-        route=route, capability=capability, status="failed", debitMicrousd=None, output=None,
+        route=route,
+        capability=capability,
+        status="failed",
+        debitMicrousd=None,
+        output=output,
         error={"code": code, "retryable": False, "retryAfterSecs": None, "hint": hint},
     ).model_dump(by_alias=True, exclude_none=True)
     return JSONResponse(status_code=status_code, content=body)
@@ -107,15 +119,14 @@ async def audio_error_handler(_: Request, error: AudioError) -> JSONResponse:
 @app.exception_handler(BrowserTaskError)
 async def browser_error_handler(_: Request, error: BrowserTaskError) -> JSONResponse:
     output = {"trace": error.trace} if error.trace else None
-    body = Envelope(
-        route="/v1/browser/act",
-        capability="browser.act",
-        status="failed",
-        debitMicrousd=None,
+    return failure(
+        "/v1/browser/act",
+        "browser.act",
+        "browser_task_failed",
+        str(error),
+        502,
         output=output,
-        error={"code": "browser_task_failed", "retryable": False, "retryAfterSecs": None, "hint": str(error)},
-    ).model_dump(by_alias=True, exclude_none=True)
-    return JSONResponse(status_code=502, content=body)
+    )
 
 
 @app.exception_handler(ImageError)

@@ -30,11 +30,18 @@ def sourced(value: str | None, url: str, field: str) -> dict | None:
     return {"value": str(value).strip(), "provenance": {"url": url, "field": field}}
 
 
+def sourced_value(field: object) -> str | None:
+    if isinstance(field, dict):
+        value = field.get("value")
+        return str(value) if value is not None else None
+    return None
+
+
 def published_emails(text: str, hostname: str, page_url: str) -> list[dict]:
     found: list[dict] = []
     seen: set[str] = set()
     for address in EMAIL_PATTERN.findall(text or ""):
-        local, email_domain = address.lower().rsplit("@", 1)
+        _, email_domain = address.lower().rsplit("@", 1)
         if email_domain != hostname or address.lower() in seen:
             continue
         seen.add(address.lower())
@@ -75,15 +82,12 @@ async def company(domain: str) -> dict:
         return {"matchStatus": "not_found", "domain": hostname, "profile": {}, "sources": []}
 
     profile, sources = build_company_profile(pages, hostname)
-    name = profile.get("name")
-    description = profile.get("description")
-    website = profile.get("website")
     return {
         "matchStatus": "partial",
         "domain": hostname,
-        "name": name["value"] if isinstance(name, dict) else None,
-        "description": description["value"] if isinstance(description, dict) else None,
-        "website": website["value"] if isinstance(website, dict) else None,
+        "name": sourced_value(profile.get("name")),
+        "description": sourced_value(profile.get("description")),
+        "website": sourced_value(profile.get("website")),
         "profile": profile,
         "sources": sources,
     }

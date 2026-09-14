@@ -38,6 +38,10 @@ def trace_entry(step: int, url: str, phase: str, **fields: object) -> dict:
     return entry
 
 
+async def _element_in_form(locator) -> bool:
+    return await locator.evaluate("element => Boolean(element.closest('form'))")
+
+
 async def execute_safe_action(page, action: dict) -> dict:
     kind = action.get("action")
     if kind == "done":
@@ -51,7 +55,7 @@ async def execute_safe_action(page, action: dict) -> dict:
             raise BrowserTaskError("Browser action lacks a selector")
         control = page.locator(selector).first
         tag = await control.evaluate("element => element.tagName.toLowerCase()")
-        if tag not in {"a", "button"} or await control.evaluate("element => Boolean(element.closest('form'))"):
+        if tag not in {"a", "button"} or await _element_in_form(control):
             raise BrowserTaskError("Unsafe browser click was blocked")
         await control.click(timeout=5_000)
         return {"outcome": "executed", "action": "click", "selector": selector}
@@ -61,7 +65,7 @@ async def execute_safe_action(page, action: dict) -> dict:
             raise BrowserTaskError("Browser fill lacks selector or value")
         field = page.locator(selector).first
         input_type = await field.get_attribute("type")
-        if input_type not in {None, "text", "search"} or await field.evaluate("element => Boolean(element.closest('form'))"):
+        if input_type not in {None, "text", "search"} or await _element_in_form(field):
             raise BrowserTaskError("Unsafe browser input was blocked")
         await field.fill(value, timeout=5_000)
         return {"outcome": "executed", "action": "fill", "selector": selector, "value": value}

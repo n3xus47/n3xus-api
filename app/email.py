@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import httpx
 from email.message import EmailMessage
-from urllib.parse import unquote, urlparse
+from urllib.parse import ParseResult, unquote, urlparse
 
 from app.config import settings
 from app.store import save_email_message
@@ -21,13 +21,25 @@ class EmailError(Exception):
     pass
 
 
-def smtp_endpoint() -> dict:
+def _parsed_smtp_url() -> ParseResult:
     if not settings.smtp_url:
         raise EmailError("SMTP is not configured; create a draft or set N3XUS_API_SMTP_URL.")
     parsed = urlparse(settings.smtp_url)
     if parsed.scheme not in {"smtp", "smtps"} or not parsed.hostname:
         raise EmailError("N3XUS_API_SMTP_URL must use smtp:// or smtps://")
-    return {"scheme": parsed.scheme, "host": parsed.hostname, "port": parsed.port or (465 if parsed.scheme == "smtps" else 587)}
+    return parsed
+
+
+def _endpoint_from_parsed(parsed: ParseResult) -> dict:
+    return {
+        "scheme": parsed.scheme,
+        "host": parsed.hostname,
+        "port": parsed.port or (465 if parsed.scheme == "smtps" else 587),
+    }
+
+
+def smtp_endpoint() -> dict:
+    return _endpoint_from_parsed(_parsed_smtp_url())
 
 
 def build_delivery_record(*, state: str, endpoint: dict, detail: str | None = None) -> dict:
@@ -45,7 +57,8 @@ def build_delivery_record(*, state: str, endpoint: dict, detail: str | None = No
 
 
 def _send(sender: str, recipient: str, subject: str, text: str) -> dict:
-    endpoint = smtp_endpoint()
+    parsed = _parsed_smtp_url()
+    endpoint = _endpoint_from_parsed(parsed)
     message = EmailMessage()
     message["From"] = sender
     message["To"] = recipient
@@ -56,7 +69,6 @@ def _send(sender: str, recipient: str, subject: str, text: str) -> dict:
         with client_type(endpoint["host"], endpoint["port"], timeout=30) as client:
             if endpoint["scheme"] == "smtp":
                 client.starttls()
-            parsed = urlparse(settings.smtp_url or "")
             if parsed.username:
                 client.login(unquote(parsed.username), unquote(parsed.password or ""))
             refused = client.send_message(message)

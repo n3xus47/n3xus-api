@@ -84,8 +84,20 @@ def assess_completeness(
     return "complete"
 
 
+def _page_text(page: Page) -> str:
+    return (page.markdown or page.text or "").strip()
+
+
 def _page_has_content(page: Page) -> bool:
-    return bool((page.markdown or page.text or "").strip())
+    return bool(_page_text(page))
+
+
+def _collection_state(text: str, status: str) -> str:
+    if text and status == "returned":
+        return "complete"
+    if text:
+        return "partial"
+    return "empty"
 
 
 def build_evidence(
@@ -98,9 +110,9 @@ def build_evidence(
     evidence: list[dict] = []
     for index, page in enumerate(pages, start=1):
         hit = hit_by_url.get(page.url, {})
-        text = (page.markdown or page.text or "").strip()
+        text = _page_text(page)
         status = outcome_by_url.get(page.url, "returned" if text else "not_returned")
-        collection_state = "complete" if text and status == "returned" else "partial" if text else "empty"
+        collection_state = _collection_state(text, status)
         evidence.append(
             {
                 "index": index,
