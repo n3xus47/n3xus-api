@@ -132,8 +132,8 @@ async def website(request: WebsiteScrapeRequest, raw: Request):
     if request.dry_run:
         return envelope(route="/v1/scrape/website", capability="scrape.website", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
     pages, outcomes, crawl_meta = await scrape_website(request)
-    list_meta: dict = {"listState": "has_results" if pages else "no_results"}
-    if crawl_meta:
+    list_meta: dict[str, object] = {"listState": "has_results" if pages else "no_results"}
+    if crawl_meta is not None:
         list_meta["crawl"] = crawl_meta
     return persist("/v1/scrape/website", raw, envelope(
         route="/v1/scrape/website", capability="scrape.website",

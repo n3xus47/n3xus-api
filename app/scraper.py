@@ -3,6 +3,7 @@ import fnmatch
 import ipaddress
 import socket
 from collections import deque
+from typing import NamedTuple
 from urllib.parse import urldefrag, urljoin, urlunparse, urlparse
 
 import httpx
@@ -62,8 +63,6 @@ def website_collection_state(pages: list[Page], seed_outcomes: list[dict[str, st
         returned = sum(1 for outcome in seed_outcomes if outcome.get("status") == "returned")
         if returned == len(seed_outcomes):
             return "complete"
-        if returned > 0:
-            return "partial"
         return "partial"
     if seed_outcomes and all(outcome.get("status") == "blocked" for outcome in seed_outcomes):
         return "blocked"
@@ -182,17 +181,29 @@ def _failure_reason(error: Exception) -> tuple[str, str]:
     return "fetch_error", type(error).__name__
 
 
-async def _load_page(
-    url: str,
-    content_format: str | None,
-    max_chars: int,
-) -> tuple[Page | None, str, str | None, str | None, str | None]:
-    """Return page, final URL, success detail, failure token, and HTML for link discovery."""
+def _failure_token(reason: str, detail: str | None) -> str:
+    return reason if not detail else f"{reason}:{detail}"
+
+
+def _split_failure_token(token: str) -> tuple[str, str | None]:
+    reason, _, detail = token.partition(":")
+    return reason, detail or None
+
+
+class PageLoadResult(NamedTuple):
+    page: Page | None
+    final_url: str
+    render_detail: str | None
+    failure: str | None
+    html: str | None
+
+
+async def _load_page(url: str, content_format: str | None, max_chars: int) -> PageLoadResult:
     try:
         html, final_url = await fetch_html(url)
     except Exception as error:
         reason, detail = _failure_reason(error)
-        return None, url, None, reason if not detail else f"{reason}:{detail}", None
+        return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
 
     page = extract_page(html, final_url, content_format, max_chars)
     content = page.markdown or page.text or ""
@@ -206,19 +217,23 @@ async def _load_page(
             render_detail = "js_rendered"
             content = page.markdown or page.text or ""
             if looks_blocked_html(html):
-                return None, final_url, None, "blocked:Blocked or challenge page detected", None
+                return PageLoadResult(
+                    None, final_url, None, _failure_token("blocked", "Blocked or challenge page detected"), None
+                )
         except Exception as error:
             reason, detail = _failure_reason(error)
             if content:
-                return page, final_url, render_detail, None, html
-            return None, final_url, None, f"{reason}:{detail}", None
+                return PageLoadResult(page, final_url, render_detail, None, html)
+            return PageLoadResult(None, final_url, None, _failure_token(reason, detail), None)
 
     if not content:
-        return None, final_url, render_detail, "empty", html
-    return page, final_url, render_detail, None, html
+        return PageLoadResult(None, final_url, render_detail, "empty", html)
+    return PageLoadResult(page, final_url, render_detail, None, html)
 
 
-async def scrape_website(request: WebsiteScrapeRequest) -> tuple[list[Page], list[dict[str, str]] | None, dict | None]:
+async def scrape_website(
+    request: WebsiteScrapeRequest,
+) -> tuple[list[Page], list[dict[str, str]], dict[str, int] | None]:
     seeds = request.url_list()
     follows_links = request.max_depth is not None and request.max_depth > 0
     follows_links = follows_links or (
@@ -241,14 +256,20 @@ async def scrape_website(request: WebsiteScrapeRequest) -> tuple[list[Page], lis
         for seed in seeds_by_canonical.get(canonical, []):
             seed_status.setdefault(seed, _outcome(seed, status, detail))
 
+    def url_is_seed(original_url: str, canonical: str) -> bool:
+        return original_url in seeds or canonical in seeds_by_canonical
+
     while queue and len(pages) < page_limit:
         url, depth = queue.popleft()
         canonical = normalize_crawl_url(url)
-        is_seed = url in seeds or canonical in seeds_by_canonical
+        is_seed = url_is_seed(url, canonical)
         if canonical in visited:
             deduped_skips += 1
             if is_seed and url in seeds:
-                existing = next((seed_status[s] for s in seeds_by_canonical.get(canonical, []) if s in seed_status), None)
+                existing = next(
+                    (seed_status[s] for s in seeds_by_canonical.get(canonical, []) if s in seed_status),
+                    None,
+                )
                 if existing:
                     mark_seed(canonical, existing["status"], existing.get("detail"))
             continue
@@ -256,26 +277,23 @@ async def scrape_website(request: WebsiteScrapeRequest) -> tuple[list[Page], lis
             continue
         visited.add(canonical)
 
-        page, final_url, render_detail, failure, html = await _load_page(
-            url, request.content_format, request.max_chars
-        )
+        loaded = await _load_page(url, request.content_format, request.max_chars)
 
-        if failure:
+        if loaded.failure:
             if is_seed:
-                reason = failure.split(":", 1)[0]
-                detail = failure.split(":", 1)[1] if ":" in failure else None
+                reason, detail = _split_failure_token(loaded.failure)
                 mark_seed(canonical, reason, detail)
             continue
 
-        if page and (page.markdown or page.text):
-            pages.append(page)
+        if loaded.page and (loaded.page.markdown or loaded.page.text):
+            pages.append(loaded.page)
             if is_seed:
-                mark_seed(canonical, "returned", render_detail)
+                mark_seed(canonical, "returned", loaded.render_detail)
         elif is_seed:
-            mark_seed(canonical, "empty", render_detail)
+            mark_seed(canonical, "empty", loaded.render_detail)
 
-        if html and follows_links and (request.max_depth is None or depth < request.max_depth):
-            for link in links_from(html, final_url):
+        if loaded.html and follows_links and (request.max_depth is None or depth < request.max_depth):
+            for link in links_from(loaded.html, loaded.final_url):
                 if normalize_crawl_url(link) not in visited:
                     queue.append((link, depth + 1))
 
