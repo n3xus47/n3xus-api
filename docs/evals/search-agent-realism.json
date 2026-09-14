@@ -1,0 +1,243 @@
+{
+  "fixtures": [
+    {
+      "id": "search-realism-gordon-recipe",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Gordon Ramsay beef wellington recipe",
+        "maxResults": 8
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ],
+      "resultCheckCount": 5,
+      "expectKeywords": [
+        "recipe",
+        "ramsay"
+      ]
+    },
+    {
+      "id": "search-realism-jamie-site",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Jamie Oliver official pasta recipes",
+        "maxResults": 8
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ],
+      "resultCheckCount": 5,
+      "expectUrlPattern": "jamieoliver\\.com"
+    },
+    {
+      "id": "search-realism-python-site",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "site:python.org asyncio tutorial",
+        "maxResults": 8
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ],
+      "resultCheckCount": 5,
+      "expectUrlPattern": "python\\.org"
+    },
+    {
+      "id": "search-realism-wikipedia-topic",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Marie Curie Nobel Prize biography",
+        "maxResults": 8
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ],
+      "resultCheckCount": 5,
+      "expectUrlPattern": "wikipedia\\.org"
+    },
+    {
+      "id": "search-realism-github-repo",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "FastAPI github repository",
+        "maxResults": 8
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ],
+      "resultCheckCount": 5,
+      "expectUrlPattern": "github\\.com/.+fastapi"
+    },
+    {
+      "id": "search-realism-ietf-rfc",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "HTTP/1.1 specification RFC site:ietf.org",
+        "maxResults": 8
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ],
+      "resultCheckCount": 5,
+      "expectUrlPattern": "ietf\\.org"
+    }
+  ],
+  "results": [
+    {
+      "id": "search-realism-gordon-recipe",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 1.0,
+      "latencyMs": 3235.83760099973,
+      "reason": "keyword_mismatch",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://pl.wikipedia.org/wiki/Anthony_Gordon",
+          "https://www.transfermarkt.pl/anthony-gordon/profil/spieler/503733",
+          "https://www.gordon.com.pl/",
+          "https://gordonua.com/rus/",
+          "https://www.pizzatomato.com.tr/",
+          "https://www.tripadvisor.com.tr/Restaurant_Review-g293974-d12268811-Reviews-Zucca_Pizza-Istanbul.html",
+          "https://www.tripadvisor.com/Restaurant_Review-g293974-d12268811-Reviews-Zucca_Pizza-Istanbul.html",
+          "https://www.meyhankoli.com/restoran/istanbul-sisli-zucca-pizza-1668"
+        ],
+        "retrievedAt": "2026-09-14T23:43:21.221123+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-realism-jamie-site",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 2862.6259530001334,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.jamieoliver.com/inspiration/pasta/",
+          "https://www.jamieoliver.com/recipes/pasta/",
+          "https://jamieoliverrecipes.com/tag/pasta/",
+          "https://jamieoliverrecipes.com/category/pasta/",
+          "https://www.jamieoliver.com/recipes/all",
+          "https://www.jamieoliver.com/",
+          "https://en.wikipedia.org/wiki/Jamie_Oliver",
+          "https://www.instagram.com/jamieoliver/"
+        ],
+        "retrievedAt": "2026-09-14T23:43:24.083927+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-realism-python-site",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 1.0,
+      "latencyMs": 3183.707492999929,
+      "reason": "url_pattern_mismatch",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.hubbardsmarina.com/",
+          "https://www.hubbardsmarina.com/39hr-overnight-fishing-trip/",
+          "https://shop.hubbardsmarina.com/collections/souvenirs",
+          "https://shop.hubbardsmarina.com/collections/tee-shirts",
+          "https://www.hubbardsmarina.com/half-day-fishing-trip/",
+          "https://www.hubbardsmarina.com/10-hour-all-day-fishing-charters/",
+          "https://www.hubbardsmarina.com/dolphin-watching-cruise-madeira-beach/",
+          "https://www.hubbardsmarina.com/florida-fisherman-2/"
+        ],
+        "retrievedAt": "2026-09-14T23:43:27.263413+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-realism-wikipedia-topic",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 1.0,
+      "latencyMs": 3489.5431400000234,
+      "reason": "url_pattern_mismatch",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://hostadvice.com/blog/how-to-make-money-online/how-to-sell-online/high-profit-margin-products/",
+          "https://fluentcart.com/blog/high-profit-margin-products/",
+          "https://boostifythemes.com/products-with-huge-profit-margins/",
+          "https://www.salehoo.com/learn/low-cost-products-with-high-profit-margins",
+          "https://www.shopify.com/blog/products-with-high-profit-margins",
+          "https://mail.google.com/mail?hl=fr",
+          "https://accounts.google.com/servicelogin?service=mail",
+          "https://support.google.com/mail/answer/8494?hl=fr&co=GENIE.Platform%3DDesktop"
+        ],
+        "retrievedAt": "2026-09-14T23:43:30.753044+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-realism-github-repo",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 1.0,
+      "latencyMs": 3698.848110000654,
+      "reason": "url_pattern_mismatch",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.aapc.com/codes/?msockid=2bb98392c80d60502c249446c943610d",
+          "https://community.ebay.com/",
+          "https://community.ebay.com/forum/selling-57920/topic/creating-a-private-listing-for-a-specific-buyer-96174/",
+          "https://www.aapc.com/medical-coding-books/certification-exam-bundle-code-book/?msockid=2bb98392c80d60502c249446c943610d",
+          "https://community.ebay.com/forum/report-ebay-technical-issues-57911/topic/updated-app-now-cant-upload-photos-141501/",
+          "https://community.ebay.com/feed/",
+          "https://community.ebay.com/about-groups/",
+          "https://community.ebay.com/forum/shipping-57923/topic/item-delivered-but-tracking-number-isnt-updating-134485/"
+        ],
+        "retrievedAt": "2026-09-14T23:43:34.456212+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-realism-ietf-rfc",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 6427.9960570002,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://datatracker.ietf.org/doc/html/rfc7230",
+          "https://datatracker.ietf.org/doc/rfc9112/",
+          "https://en.wikipedia.org/wiki/List_of_HTTP_status_codes",
+          "https://mailarchive.ietf.org/arch/legacy/msg/ietf-announce/12871/",
+          "https://www.ietf.org/archive/id/draft-ietf-httpbis-messaging-13.html",
+          "https://pl.wikipedia.org/wiki/Http",
+          "https://en.wikipedia.org/wiki/HTTP",
+          "https://pl.wikipedia.org/wiki/HTTPS"
+        ],
+        "retrievedAt": "2026-09-14T23:43:40.884171+00:00",
+        "collectionState": "complete"
+      }
+    }
+  ]
+}

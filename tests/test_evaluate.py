@@ -6,7 +6,7 @@ import httpx
 import pytest
 
 from app.capabilities import get_capability
-from app.evaluate import evaluate, render_report, validate_cases
+from app.evaluate import check_result_relevance, evaluate, render_report, validate_cases
 
 M1_CORPUS_PATH = Path(__file__).resolve().parents[1] / "evals" / "m1-corpus.json"
 M1_CASES_PER_SUITE = 10
@@ -96,3 +96,35 @@ def test_research_fixtures_validate():
         }
     ])
     assert cases[0]["route"] == "/v1/research/deep"
+
+
+def test_search_agent_realism_fixture_validates():
+    path = Path(__file__).resolve().parents[1] / "evals" / "search-agent-realism.json"
+    cases = validate_cases(json.loads(path.read_text()))
+    assert len(cases) >= 5
+    assert all(c.get("expectUrlPattern") or c.get("expectKeywords") for c in cases)
+
+
+def test_check_result_relevance_url_pattern_and_keywords():
+    body = {"output": {"results": [
+        {"url": "https://www.jamieoliver.com/recipes/pasta", "title": "Pasta"},
+        {"url": "https://example.com", "title": "Other"},
+    ]}}
+    assert check_result_relevance({"expectUrlPattern": r"jamieoliver\.com", "resultCheckCount": 2}, body) == ""
+    assert check_result_relevance({"expectUrlPattern": r"python\.org"}, body) == "url_pattern_mismatch"
+    assert check_result_relevance({"expectKeywords": ["pasta", "jamie"]}, body) == ""
+    assert check_result_relevance({"expectKeywords": ["quantum"]}, body) == "keyword_mismatch"
+
+
+async def test_evaluate_applies_relevance_checks_after_field_coverage():
+    body = {"status": "succeeded", "capability": "search.web",
+            "output": {"results": [{"url": "https://example.com", "title": "Unrelated"}]},
+            "source": {"collectionState": "complete"}}
+    fixture = case(capability="search.web", route="/v1/search/web",
+                   payload={"query": "test"},
+                   required=["output.results.*.url", "output.results.*.title"],
+                   expectUrlPattern=r"jamieoliver\.com")
+    async with httpx.AsyncClient(transport=httpx.MockTransport(lambda _: httpx.Response(200, json=body)), base_url="http://localhost") as client:
+        result = (await evaluate(client, [fixture]))[0]
+    assert not result["success"]
+    assert result["reason"] == "url_pattern_mismatch"

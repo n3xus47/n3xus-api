@@ -1,0 +1,92 @@
+[
+  {
+    "id": "search-realism-gordon-recipe",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Gordon Ramsay beef wellington recipe",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "expectKeywords": ["recipe", "ramsay"]
+  },
+  {
+    "id": "search-realism-jamie-site",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Jamie Oliver official pasta recipes",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "expectUrlPattern": "jamieoliver\\.com"
+  },
+  {
+    "id": "search-realism-python-site",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "site:python.org asyncio tutorial",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "expectUrlPattern": "python\\.org"
+  },
+  {
+    "id": "search-realism-wikipedia-topic",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Marie Curie Nobel Prize biography",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "expectUrlPattern": "wikipedia\\.org"
+  },
+  {
+    "id": "search-realism-github-repo",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "FastAPI github repository",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "expectUrlPattern": "github\\.com/.+fastapi"
+  },
+  {
+    "id": "search-realism-ietf-rfc",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "HTTP/1.1 specification RFC site:ietf.org",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "expectUrlPattern": "ietf\\.org"
+  }
+]

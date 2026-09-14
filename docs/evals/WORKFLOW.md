@@ -45,6 +45,10 @@ Chromium (Playwright) and Ollama with the configured model. Success depends on
 the planner completing read, filter, sort, or pagination tasks on lawful public
 demo pages; inspect `output.trace` for plan/execute steps and blocked actions.
 
+Agent-realism web search checks (top-result URL patterns and keywords) live in
+`evals/search-agent-realism.json`; run with `--fixtures evals/search-agent-realism.json
+--output docs/evals/search-agent-realism.md`.
+
 Deep research benchmarks live in `evals/research.json`. They require SearxNG,
 Playwright/Chromium for page collection, and Ollama. Review `output.searchPlan`,
 `output.evidence`, and `output.completeness` rather than treating the answer alone

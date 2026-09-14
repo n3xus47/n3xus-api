@@ -4,6 +4,7 @@ import asyncio
 from datetime import UTC, datetime
 import json
 from pathlib import Path
+import re
 from time import perf_counter
 from uuid import uuid4
 from urllib.parse import urlsplit
@@ -31,7 +32,51 @@ def validate_cases(cases):
         required = case.get("required")
         if not isinstance(required, list) or not required or not all(isinstance(p, str) and p.startswith("output.") for p in required):
             raise ValueError("Specify non-empty required output paths")
+        count = case.get("resultCheckCount", 3)
+        if not isinstance(count, int) or count < 1:
+            raise ValueError("resultCheckCount must be a positive integer")
+        pattern = case.get("expectUrlPattern")
+        if pattern is not None and not isinstance(pattern, str):
+            raise ValueError("expectUrlPattern must be a string regex")
+        keywords = case.get("expectKeywords")
+        if keywords is not None:
+            if not isinstance(keywords, list) or not keywords or not all(isinstance(k, str) and k for k in keywords):
+                raise ValueError("expectKeywords must be a non-empty list of strings")
     return cases
+
+
+def _top_results(body, limit):
+    output = body.get("output")
+    if not isinstance(output, dict):
+        return []
+    results = output.get("results")
+    if not isinstance(results, list):
+        return []
+    return [r for r in results[:limit] if isinstance(r, dict)]
+
+
+def check_result_relevance(case, body):
+    """Optional topical checks on the first N search results."""
+    limit = case.get("resultCheckCount", 3)
+    rows = _top_results(body, limit)
+    if not rows:
+        return "missing_results_for_relevance"
+    pattern = case.get("expectUrlPattern")
+    if pattern:
+        compiled = re.compile(pattern, re.I)
+        if not any(compiled.search(str(row.get("url") or "")) for row in rows):
+            return "url_pattern_mismatch"
+    keywords = case.get("expectKeywords")
+    if keywords:
+        lowered = [k.casefold() for k in keywords]
+
+        def matches(row):
+            hay = f"{row.get('url') or ''} {row.get('title') or ''}".casefold()
+            return any(k in hay for k in lowered)
+
+        if not any(matches(row) for row in rows):
+            return "keyword_mismatch"
+    return ""
 
 
 def field_counts(value, parts):
@@ -86,6 +131,8 @@ async def evaluate(client, cases):
                 reason = "missing_required_fields"
             if not reason and capability.support_level == "unavailable":
                 reason = "unavailable"
+            if not reason and (case.get("expectUrlPattern") or case.get("expectKeywords")):
+                reason = check_result_relevance(case, body)
         except httpx.HTTPError as error:
             reason = type(error).__name__
         results.append({"id": case["id"], "capability": case["capability"], "supportLevel": capability.support_level,
