@@ -56,7 +56,9 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // This gives both agents a real, named branch that persists across phases.
   const sandbox = await sandcastle.createSandbox({
     branch,
-    sandbox: docker(),
+    sandbox: docker({
+      mounts: [{ hostPath: "~/.codex/auth.json", sandboxPath: "~/.codex/auth.json", readonly: true }],
+    }),
     hooks,
   });
 
@@ -77,7 +79,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     const implement = await sandbox.run({
       name: "implementer",
       maxIterations: 1,
-      agent: sandcastle.pi("gpt-4.1", { env: { PI_PROVIDER: "openai" } }),
+      agent: sandcastle.codex("gpt-5.4"),
       promptFile: "./.sandcastle/implement-prompt.md",
     });
 
@@ -101,7 +103,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     await sandbox.run({
       name: "reviewer",
       maxIterations: 1,
-      agent: sandcastle.pi("gpt-4.1", { env: { PI_PROVIDER: "openai" } }),
+      agent: sandcastle.codex("gpt-5.4"),
       promptFile: "./.sandcastle/review-prompt.md",
       promptArgs: {
         BRANCH: branch,

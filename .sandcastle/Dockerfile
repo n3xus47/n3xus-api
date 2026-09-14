@@ -22,7 +22,10 @@ ARG AGENT_GID=1000
 
 RUN groupadd --gid $AGENT_GID agent \
   && useradd --uid $AGENT_UID --gid $AGENT_GID --create-home agent \
-  && npm install -g @mariozechner/pi-coding-agent
+  && npm install -g @openai/codex
+
+RUN mkdir -p /home/agent/.codex \
+  && chown -R $AGENT_UID:$AGENT_GID /home/agent/.codex
 
 USER ${AGENT_UID}:${AGENT_GID}
 WORKDIR /home/agent
