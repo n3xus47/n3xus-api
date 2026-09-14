@@ -7,6 +7,7 @@ from urllib.parse import quote_plus
 
 import httpx
 
+from app.meta_ads import search_ads
 from app.models import WebsiteScrapeRequest
 from app.scraper import scrape_website
 from app.search import search_web
@@ -59,6 +60,8 @@ async def instagram_hashtag(payload: dict) -> dict:
 
 
 async def facebook(payload: dict, resource: str) -> dict:
+    if resource == "ads":
+        return await search_ads(payload)
     if resource == "groups":
         urls = payload.get("urls")
         if isinstance(urls, str):
@@ -66,11 +69,7 @@ async def facebook(payload: dict, resource: str) -> dict:
         if not isinstance(urls, list) or not urls or not all(isinstance(url, str) for url in urls):
             raise ValueError("urls must be a non-empty list")
         return await public_pages(urls, int(payload.get("maxItems", 20)))
-    query = payload.get("query")
-    if not isinstance(query, str) or not query:
-        raise ValueError("query is required")
-    results, _ = await search_web(f"site:facebook.com/ads/library {query}", int(payload.get("maxItems", 20)))
-    return {"items": [item.model_dump(by_alias=True, exclude_none=True) for item in results]}
+    raise ValueError("Unsupported Facebook resource")
 
 
 async def amazon(payload: dict, resource: str) -> dict:

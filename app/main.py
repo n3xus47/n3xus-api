@@ -14,6 +14,7 @@ from app.github import GitHubError, contents as github_contents, list_resource a
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance
 from app.pdf import PdfError, extract_pdf
+from app.meta_ads import MetaAdsError
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
@@ -293,6 +294,8 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "invalid_request", str(error), 400)
     except EmailError as error:
         return failure(route, capability, "email_not_configured", str(error), 503)
+    except MetaAdsError as error:
+        return failure(route, capability, "meta_ads_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
     source_name = {
@@ -301,10 +304,17 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         "scrape.twitter": "public-x-pages",
         "scrape.instagram": "public-instagram-pages",
         "scrape.facebook": "public-facebook-pages",
+        "scrape.facebook.ads": "meta-ads-library-api",
         "scrape.tiktok": "public-tiktok-pages",
         "scrape.threads": "public-threads-pages",
     }.get(capability)
-    source = provenance(source_name, state="complete" if output else "empty") if source_name else None
+    if capability == "scrape.facebook.ads" and isinstance(output, dict):
+        ads = output.get("ads")
+        urls = [ad["libraryUrl"] for ad in ads if isinstance(ad, dict) and isinstance(ad.get("libraryUrl"), str)] if isinstance(ads, list) else []
+        state = "complete" if urls else "empty"
+        source = provenance(source_name, urls, state) if source_name else None
+    else:
+        source = provenance(source_name, state="complete" if output else "empty") if source_name else None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)
 
 
@@ -345,7 +355,7 @@ async def public_source_endpoint(provider: str, resource: str, payload: dict, ra
     }
     if resource not in supported.get(provider, set()):
         return failure(raw.url.path, None, "unknown_capability", "Unsupported local public-source endpoint.", 404)
-    capability = f"scrape.{provider}"
+    capability = "scrape.facebook.ads" if provider == "facebook" and resource == "ads" else f"scrape.{provider}"
     if provider == "facebook":
         action = lambda: facebook(payload, resource)
     elif provider == "amazon":
