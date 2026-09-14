@@ -121,6 +121,37 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
     assert open_business.json()["capability"] == "scrape.open-business"
 
 
+async def test_search_web_site_operator_filters_merged_hosts(client, monkeypatch):
+    from app.models import SearchResult
+
+    async def mixed_searxng(query, _max):
+        assert "site:" not in query
+        return (
+            [
+                SearchResult(title="On site", url="https://python.org/about/", snippet="python"),
+                SearchResult(title="Off site", url="https://example.com/python", snippet="python"),
+            ],
+            None,
+        )
+
+    async def empty_ddg(_query, _max):
+        return []
+
+    monkeypatch.setattr("app.search._searxng_search_optional", mixed_searxng)
+    monkeypatch.setattr("app.search._ddg_search_optional", empty_ddg)
+
+    response = await client.post(
+        "/v1/search/web",
+        headers={"Idempotency-Key": f"search-site-{uuid4()}"},
+        json={"query": "python site:python.org"},
+    )
+    body = response.json()
+    assert response.status_code == 200
+    assert body["status"] == "succeeded"
+    urls = [row["url"] for row in body["output"]["results"]]
+    assert urls == ["https://python.org/about/"]
+
+
 async def test_github_list_resources_return_normalized_pagination(client, monkeypatch):
     async def fake_list(*_args, **_kwargs):
         return {

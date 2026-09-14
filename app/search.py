@@ -1,6 +1,7 @@
 import asyncio
 import re
 from dataclasses import dataclass
+from urllib.parse import urlparse
 
 import httpx
 
@@ -127,6 +128,55 @@ async def _ddg_search_optional(query: str, max_results: int) -> list[SearchResul
         return []
 
 
+_SITE_OPERATOR_RE = re.compile(
+    r"\bsite:([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+)\b",
+    re.IGNORECASE,
+)
+
+
+def _normalize_site_host(host: str) -> str:
+    lowered = host.lower().strip(".")
+    if lowered.startswith("www."):
+        return lowered[4:]
+    return lowered
+
+
+def parse_site_restriction(query: str) -> tuple[str, str | None]:
+    match = _SITE_OPERATOR_RE.search(query)
+    if not match:
+        return query, None
+    site_host = _normalize_site_host(match.group(1))
+    text = _SITE_OPERATOR_RE.sub(" ", query)
+    text = " ".join(text.split())
+    return text, site_host
+
+
+def _url_host(url: str) -> str:
+    hostname = urlparse(url).hostname
+    if not hostname:
+        return ""
+    return _normalize_site_host(hostname)
+
+
+def url_matches_site_host(url: str, site_host: str) -> bool:
+    host = _url_host(url)
+    site = _normalize_site_host(site_host)
+    if not host or not site:
+        return False
+    return host == site or host.endswith(f".{site}")
+
+
+def filter_results_by_site_host(results: list[SearchResult], site_host: str) -> list[SearchResult]:
+    return [item for item in results if url_matches_site_host(item.url, site_host)]
+
+
+def apply_site_restriction(query: str, ranked: list[SearchResult]) -> list[SearchResult]:
+    _, site_host = parse_site_restriction(query)
+    if not site_host:
+        return ranked
+    return filter_results_by_site_host(ranked, site_host)
+
+
 def query_tokens(query: str) -> list[str]:
     return [
         token
@@ -227,13 +277,15 @@ async def search_web_fused(
     variant_limit: int | None = None,
 ) -> SearchFusionOutcome:
     """Run SearxNG variants and DuckDuckGo in parallel, merge, dedupe, and rank by relevance."""
+    engine_query, site_host = parse_site_restriction(query)
+    relevance_query = engine_query or query
     limit = variant_limit if variant_limit is not None else settings.search_variant_limit
-    variants = build_search_variants(query, limit=limit)
+    variants = build_search_variants(engine_query or query, limit=limit)
     per_variant = max(max_results, 10)
     providers: list[str] = []
 
     searxng_tasks = [_searxng_search_optional(variant, per_variant) for variant in variants]
-    ddg_task = _ddg_search_optional(query, max(max_results, 15))
+    ddg_task = _ddg_search_optional(engine_query or query, max(max_results, 15))
     gathered = await asyncio.gather(*searxng_tasks, ddg_task, return_exceptions=True)
     searxng_outcomes = gathered[: len(searxng_tasks)]
     ddg_outcome = gathered[len(searxng_tasks)]
@@ -257,16 +309,22 @@ async def search_web_fused(
         providers.append("duckduckgo")
 
     merged = merge_search_results(batches, max_results)
-    ranked = rank_search_results(query, merged)[:max_results]
+    ranked = apply_site_restriction(query, rank_search_results(relevance_query, merged)[:max_results])
+    unique_providers = tuple(dict.fromkeys(providers))
     if ranked:
-        unique_providers = tuple(dict.fromkeys(providers))
         return SearchFusionOutcome(ranked, answers[0] if answers else None, unique_providers)
 
+    if site_host and merged:
+        return SearchFusionOutcome([], answers[0] if answers else None, unique_providers)
+
     if settings.search_ddg_enabled:
-        ddg_only = await _ddg_search_optional(query, max_results)
+        ddg_only = await _ddg_search_optional(engine_query or query, max_results)
         if ddg_only:
             return SearchFusionOutcome(
-                rank_search_results(query, ddg_only)[:max_results],
+                apply_site_restriction(
+                    query,
+                    rank_search_results(relevance_query, ddg_only)[:max_results],
+                ),
                 None,
                 ("duckduckgo",),
             )
