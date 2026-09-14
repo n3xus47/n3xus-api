@@ -21,7 +21,16 @@ class Capability:
 REGISTRY = (
     Capability("scrape.website", "structured", "readability-playwright", ("JavaScript fallback is best-effort.",), "website"),
     Capability("search.web", "best_effort", "searxng", ("Results depend on configured SearxNG engines.",), "search"),
-    Capability("research.deep", "experimental", "searxng-ollama", ("Evidence coverage and synthesis depend on local search and model quality.",), "research"),
+    Capability(
+        "research.deep",
+        "experimental",
+        "searxng-ollama",
+        (
+            "Runs a multi-query search plan, dedupes diverse public sources, and returns numbered evidence with provenance.",
+            "Completeness is empty, partial, or complete based on collected evidence—not model confidence.",
+        ),
+        "research",
+    ),
     Capability("scrape.github", "structured", "github-public-rest", ("Unauthenticated GitHub rate limits apply.",), "github"),
     Capability("scrape.youtube", "structured", "yt-dlp-youtube-transcript", ("Availability depends on public video metadata and captions.",), "youtube"),
     Capability("scrape.pdf", "structured", "pypdf-public-url", ("Scanned PDFs without a text layer are unsupported.",), "pdf"),

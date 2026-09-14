@@ -66,3 +66,16 @@ def test_browser_act_fixtures_validate():
         }
     ])
     assert cases[0]["capability"] == "browser.act"
+
+
+def test_research_fixtures_validate():
+    cases = validate_cases([
+        {
+            "id": "research-smoke",
+            "capability": "research.deep",
+            "route": "/v1/research/deep",
+            "payload": {"query": "Example topic"},
+            "required": ["output.searchPlan", "output.evidence", "output.completeness"],
+        }
+    ])
+    assert cases[0]["route"] == "/v1/research/deep"
