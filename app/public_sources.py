@@ -7,7 +7,9 @@ from urllib.parse import quote_plus
 
 import httpx
 
+from app.amazon_adapter import amazon_product, amazon_reviews, amazon_search
 from app.models import WebsiteScrapeRequest
+from app.open_business import search_open_business
 from app.scraper import scrape_website
 from app.search import search_web
 
@@ -75,41 +77,11 @@ async def facebook(payload: dict, resource: str) -> dict:
 
 async def amazon(payload: dict, resource: str) -> dict:
     if resource == "product":
-        url = payload.get("url")
-        asin = payload.get("asin")
-        marketplace = str(payload.get("marketplace", "US")).lower()
-        hosts = {"us": "amazon.com", "uk": "amazon.co.uk", "de": "amazon.de"}
-        if not url and isinstance(asin, str):
-            url = f"https://www.{hosts.get(marketplace, 'amazon.com')}/dp/{asin}"
-        if not isinstance(url, str):
-            raise ValueError("asin or url is required")
-        return await public_pages([url], 1)
+        return await amazon_product(payload)
     if resource == "reviews":
-        asin = payload.get("asin")
-        if not isinstance(asin, str):
-            raise ValueError("asin is required")
-        return await public_pages([f"https://www.amazon.com/product-reviews/{asin}"], int(payload.get("maxItems", 10)))
-    query = payload.get("query")
-    if not isinstance(query, str) or not query:
-        raise ValueError("query is required")
-    results, _ = await search_web(f"site:amazon.com {query}", int(payload.get("maxItems", 10)))
-    return {"items": [item.model_dump(by_alias=True, exclude_none=True) for item in results]}
+        return await amazon_reviews(payload)
+    return await amazon_search(payload)
 
 
 async def google_places(payload: dict) -> dict:
-    search = payload.get("search")
-    if not isinstance(search, str) or not search:
-        raise ValueError("search is required")
-    location = payload.get("location")
-    query = f"{search}, {location}" if isinstance(location, str) else search
-    try:
-        async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "n3xusAPI local tools"}) as client:
-            response = await client.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={"q": query, "format": "jsonv2", "addressdetails": 1, "limit": min(int(payload.get("maxItems", 10)), 50)},
-            )
-            response.raise_for_status()
-            rows = response.json()
-    except (httpx.HTTPError, ValueError) as error:
-        raise RuntimeError("OpenStreetMap public geocoder is unavailable") from error
-    return {"places": [{"name": row.get("display_name"), "address": row.get("display_name"), "latitude": row.get("lat"), "longitude": row.get("lon"), "category": row.get("type"), "sourceUrl": row.get("osm_url")} for row in rows]}
+    return await search_open_business(payload)

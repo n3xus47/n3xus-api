@@ -12,8 +12,9 @@ from app.browser_act import BrowserTaskError, act as browser_act
 from app.email import EmailError, dns_has_token, domain_token, send_email
 from app.github import GitHubError, contents as github_contents, list_resource as github_list_resource, profile as github_profile, repository as github_repository, search as github_search
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
-from app.provenance import provenance
+from app.provenance import provenance, strip_collection_state
 from app.pdf import PdfError, extract_pdf
+from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
@@ -295,16 +296,18 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "email_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
+    output, collection_state = strip_collection_state(output)
     source_name = {
         "scrape.google": "openstreetmap-nominatim",
-        "scrape.amazon": "public-amazon-pages",
+        "scrape.open-business": "openstreetmap-nominatim",
+        "scrape.amazon": "public-amazon-structured",
         "scrape.twitter": "public-x-pages",
         "scrape.instagram": "public-instagram-pages",
         "scrape.facebook": "public-facebook-pages",
         "scrape.tiktok": "public-tiktok-pages",
         "scrape.threads": "public-threads-pages",
     }.get(capability)
-    source = provenance(source_name, state="complete" if output else "empty") if source_name else None
+    source = provenance(source_name, state=collection_state) if source_name else None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)
 
 
@@ -321,6 +324,11 @@ async def instagram_hashtag_endpoint(payload: dict, raw: Request):
 @app.post("/v1/scrape/google/places")
 async def google_places_endpoint(payload: dict, raw: Request):
     return await public_source_response(raw.url.path, "scrape.google", payload, raw, lambda: google_places(payload))
+
+
+@app.post("/v1/scrape/open-business/search")
+async def open_business_search_endpoint(payload: dict, raw: Request):
+    return await public_source_response(raw.url.path, "scrape.open-business", payload, raw, lambda: search_open_business(payload))
 
 
 @app.post("/v1/scrape/threads/posts")

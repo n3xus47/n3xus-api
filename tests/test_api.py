@@ -61,6 +61,7 @@ async def test_dry_run_does_not_call_scraper(client, monkeypatch):
     ("/v1/scrape/facebook/ads", {"query": "example"}),
     ("/v1/scrape/amazon/search", {"query": "example"}),
     ("/v1/scrape/google/places", {"search": "coffee"}),
+    ("/v1/scrape/open-business/search", {"search": "coffee"}),
     ("/v1/email/send", {"to": "person@example.com", "subject": "Hi", "text": "Draft"}),
     ("/v1/seo/rank", {"keyword": "example", "domain": "example.com"}),
     ("/v1/browser/act", {"task": "Find the contact email", "startUrl": "https://example.com"}),
@@ -87,11 +88,12 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
         return [{"login": "octocat"}]
 
     async def fake_places(_):
-        return {"places": [{"name": "Coffee"}]}
+        return {"attribution": "© OpenStreetMap contributors", "businesses": [{"name": "Coffee"}], "places": [{"name": "Coffee"}]}
 
     monkeypatch.setattr("app.main.search_web", fake_search)
     monkeypatch.setattr("app.main.github_profile", fake_github)
     monkeypatch.setattr("app.main.google_places", fake_places)
+    monkeypatch.setattr("app.main.search_open_business", fake_places)
 
     search = await client.post(
         "/v1/search/web", headers={"Idempotency-Key": f"search-test-{uuid4()}"}, json={"query": "coffee"}
@@ -102,10 +104,17 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
     places = await client.post(
         "/v1/scrape/google/places", headers={"Idempotency-Key": f"places-test-{uuid4()}"}, json={"search": "coffee"}
     )
+    open_business = await client.post(
+        "/v1/scrape/open-business/search",
+        headers={"Idempotency-Key": f"open-business-test-{uuid4()}"},
+        json={"search": "coffee"},
+    )
 
     assert search.json()["source"]["collectionState"] == "empty"
     assert github.json()["source"]["name"] == "github-public-rest"
     assert places.json()["source"]["name"] == "openstreetmap-nominatim"
+    assert open_business.json()["source"]["name"] == "openstreetmap-nominatim"
+    assert open_business.json()["capability"] == "scrape.open-business"
 
 
 async def test_capabilities_expose_truthful_support_metadata(client):
@@ -114,8 +123,9 @@ async def test_capabilities_expose_truthful_support_metadata(client):
     assert response.status_code == 200
     capabilities = {item["slug"]: item for item in response.json()["output"]}
     assert capabilities["scrape.github"]["supportLevel"] == "structured"
-    assert capabilities["scrape.amazon"]["supportLevel"] == "best_effort"
-    assert "structured Amazon" in capabilities["scrape.amazon"]["limitations"][0]
+    assert capabilities["scrape.open-business"]["supportLevel"] == "structured"
+    assert capabilities["scrape.amazon"]["supportLevel"] == "structured"
+    assert "Structured Amazon" in capabilities["scrape.amazon"]["limitations"][0]
 
 
 async def test_capabilities_filter_returns_one_capability_with_metadata(client):

@@ -1,0 +1,172 @@
+[
+  {
+    "id": "places-01",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Eiffel Tower",
+      "maxItems": 3,
+      "location": "Paris"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-02",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Brandenburg Gate",
+      "maxItems": 3,
+      "location": "Berlin"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-03",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Colosseum",
+      "maxItems": 3,
+      "location": "Rome"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-04",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Big Ben",
+      "maxItems": 3,
+      "location": "London"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-05",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Sydney Opera House",
+      "maxItems": 3,
+      "location": "Sydney"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-06",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Central Park",
+      "maxItems": 3,
+      "location": "New York"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-07",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Acropolis",
+      "maxItems": 3,
+      "location": "Athens"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-08",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Sagrada Familia",
+      "maxItems": 3,
+      "location": "Barcelona"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-09",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Charles Bridge",
+      "maxItems": 3,
+      "location": "Prague"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  },
+  {
+    "id": "places-10",
+    "capability": "scrape.open-business",
+    "route": "/v1/scrape/open-business/search",
+    "payload": {
+      "search": "Wawel Castle",
+      "maxItems": 3,
+      "location": "Krakow"
+    },
+    "required": [
+      "output.attribution",
+      "output.businesses.*.name",
+      "output.businesses.*.latitude",
+      "output.businesses.*.longitude",
+      "output.businesses.*.formattedAddress"
+    ]
+  }
+]
