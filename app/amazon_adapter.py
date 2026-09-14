@@ -50,6 +50,22 @@ def _parse_price(node) -> str | None:
     return _clean_text(node.get_text())
 
 
+def _review_star_label(rating_node) -> str | None:
+    if not rating_node:
+        return None
+    aria_label = rating_node.get("aria-label")
+    if isinstance(aria_label, str) and aria_label:
+        return _clean_text(aria_label)
+    return _clean_text(rating_node.get_text())
+
+
+async def _fetch_page(url: str) -> tuple[str, str]:
+    try:
+        return await fetch_html(url)
+    except ScrapeError as error:
+        raise RuntimeError(str(error)) from error
+
+
 def parse_search_listings(html: str, page_url: str, limit: int) -> list[dict]:
     soup = BeautifulSoup(html, "html.parser")
     listings: list[dict] = []
@@ -86,7 +102,8 @@ def parse_search_listings(html: str, page_url: str, limit: int) -> list[dict]:
 
 def parse_product_record(html: str, page_url: str) -> dict | None:
     soup = BeautifulSoup(html, "html.parser")
-    title = _clean_text(soup.select_one("#productTitle").get_text()) if soup.select_one("#productTitle") else None
+    title_node = soup.select_one("#productTitle")
+    title = _clean_text(title_node.get_text()) if title_node else None
     asin_input = soup.select_one("#ASIN")
     asin = _clean_text(asin_input.get("value") if asin_input else None)
     if not asin:
@@ -115,8 +132,7 @@ def parse_review_records(html: str, limit: int) -> list[dict]:
         body = _clean_text(body_node.get_text() if body_node else None)
         if not body:
             continue
-        rating_node = card.select_one('[data-hook="review-star-rating"]')
-        rating = _clean_text(rating_node.get("aria-label") if rating_node and rating_node.get("aria-label") else rating_node.get_text() if rating_node else None)
+        rating = _review_star_label(card.select_one('[data-hook="review-star-rating"]'))
         date_node = card.select_one('[data-hook="review-date"]')
         record = {"body": body}
         if rating:
@@ -133,9 +149,14 @@ def parse_review_records(html: str, limit: int) -> list[dict]:
 
 
 def _response(resource: str, marketplace: dict, collection_state: str, **payload: object) -> dict:
-    body = {"resource": resource, "marketplace": marketplace["label"], "marketplaceHost": marketplace["host"], "coverage": marketplace_coverage(), **payload}
-    body["collectionState"] = collection_state
-    return body
+    return {
+        "resource": resource,
+        "marketplace": marketplace["label"],
+        "marketplaceHost": marketplace["host"],
+        "coverage": marketplace_coverage(),
+        "collectionState": collection_state,
+        **payload,
+    }
 
 
 async def amazon_search(payload: dict) -> dict:
@@ -145,10 +166,7 @@ async def amazon_search(payload: dict) -> dict:
     marketplace = marketplace_config(payload.get("marketplace", "US"))
     limit = min(int(payload.get("maxItems", 10)), 30)
     url = f"https://www.{marketplace['host']}/s?k={quote_plus(query.strip())}"
-    try:
-        html, final_url = await fetch_html(url)
-    except ScrapeError as error:
-        raise RuntimeError(str(error)) from error
+    html, final_url = await _fetch_page(url)
     if detect_blocked(html):
         return _response("search", marketplace, "blocked", query=query.strip(), listings=[], items=[])
     listings = parse_search_listings(html, final_url, limit)
@@ -167,10 +185,7 @@ async def amazon_product(payload: dict) -> dict:
     parsed = urlparse(url)
     if parsed.hostname and marketplace["host"] not in parsed.hostname:
         raise ValueError(f"url must target marketplace host {marketplace['host']}")
-    try:
-        html, final_url = await fetch_html(url.strip())
-    except ScrapeError as error:
-        raise RuntimeError(str(error)) from error
+    html, final_url = await _fetch_page(url.strip())
     if detect_blocked(html):
         return _response("product", marketplace, "blocked", product=None)
     product = parse_product_record(html, final_url)
@@ -185,10 +200,7 @@ async def amazon_reviews(payload: dict) -> dict:
     marketplace = marketplace_config(payload.get("marketplace", "US"))
     limit = min(int(payload.get("maxItems", 10)), 30)
     url = f"https://www.{marketplace['host']}/product-reviews/{asin.strip()}"
-    try:
-        html, final_url = await fetch_html(url)
-    except ScrapeError as error:
-        raise RuntimeError(str(error)) from error
+    html, final_url = await _fetch_page(url)
     if detect_blocked(html):
         return _response("reviews", marketplace, "blocked", asin=asin.strip(), reviews=[])
     reviews = parse_review_records(html, limit)

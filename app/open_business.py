@@ -1,10 +1,20 @@
 """Structured open-business search using OpenStreetMap Nominatim (ODbL)."""
-from urllib.parse import quote_plus
-
 import httpx
 
 OSM_ATTRIBUTION = "© OpenStreetMap contributors"
 NOMINATIM_SEARCH = "https://nominatim.openstreetmap.org/search"
+_NULLABLE_FIELDS = frozenset({"rating", "reviewCount"})
+
+
+def _nominatim_source_url(row: dict) -> str | None:
+    osm_url = row.get("osm_url")
+    if isinstance(osm_url, str) and osm_url:
+        return osm_url
+    osm_type = row.get("osm_type")
+    osm_id = row.get("osm_id")
+    if osm_type and osm_id is not None:
+        return f"https://www.openstreetmap.org/{osm_type}/{osm_id}"
+    return None
 
 
 def normalize_nominatim_row(row: dict) -> dict:
@@ -19,12 +29,7 @@ def normalize_nominatim_row(row: dict) -> dict:
         "placeType": row.get("type"),
         "osmType": row.get("osm_type"),
         "osmId": row.get("osm_id"),
-        "sourceUrl": row.get("osm_url")
-        or (
-            f"https://www.openstreetmap.org/{row['osm_type']}/{row['osm_id']}"
-            if row.get("osm_type") and row.get("osm_id") is not None
-            else None
-        ),
+        "sourceUrl": _nominatim_source_url(row),
         "rating": None,
         "reviewCount": None,
     }
@@ -32,7 +37,7 @@ def normalize_nominatim_row(row: dict) -> dict:
         record["phone"] = extratags["phone"].strip()
     if isinstance(extratags.get("website"), str) and extratags["website"].strip():
         record["website"] = extratags["website"].strip()
-    return {key: value for key, value in record.items() if value is not None or key in {"rating", "reviewCount"}}
+    return {key: value for key, value in record.items() if value is not None or key in _NULLABLE_FIELDS}
 
 
 async def fetch_nominatim(query: str, limit: int) -> list[dict]:

@@ -12,7 +12,7 @@ from app.browser_act import BrowserTaskError, act as browser_act
 from app.email import EmailError, dns_has_token, domain_token, send_email
 from app.github import GitHubError, contents as github_contents, list_resource as github_list_resource, profile as github_profile, repository as github_repository, search as github_search
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
-from app.provenance import provenance
+from app.provenance import provenance, strip_collection_state
 from app.pdf import PdfError, extract_pdf
 from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
@@ -296,12 +296,7 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "email_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
-    collection_state = "complete"
-    if isinstance(output, dict) and isinstance(output.get("collectionState"), str):
-        collection_state = output["collectionState"]
-        output = {key: value for key, value in output.items() if key != "collectionState"}
-    elif not output:
-        collection_state = "empty"
+    output, collection_state = strip_collection_state(output)
     source_name = {
         "scrape.google": "openstreetmap-nominatim",
         "scrape.open-business": "openstreetmap-nominatim",

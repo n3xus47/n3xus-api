@@ -7,7 +7,9 @@ from urllib.parse import quote_plus
 
 import httpx
 
+from app.amazon_adapter import amazon_product, amazon_reviews, amazon_search
 from app.models import WebsiteScrapeRequest
+from app.open_business import search_open_business
 from app.scraper import scrape_website
 from app.search import search_web
 
@@ -74,8 +76,6 @@ async def facebook(payload: dict, resource: str) -> dict:
 
 
 async def amazon(payload: dict, resource: str) -> dict:
-    from app.amazon_adapter import amazon_product, amazon_reviews, amazon_search
-
     if resource == "product":
         return await amazon_product(payload)
     if resource == "reviews":
@@ -84,6 +84,4 @@ async def amazon(payload: dict, resource: str) -> dict:
 
 
 async def google_places(payload: dict) -> dict:
-    from app.open_business import search_open_business
-
     return await search_open_business(payload)
