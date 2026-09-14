@@ -77,7 +77,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     const implement = await sandbox.run({
       name: "implementer",
       maxIterations: 1,
-      agent: sandcastle.pi("gpt-5.4", { env: { PI_PROVIDER: "openai" } }),
+      agent: sandcastle.pi("gpt-4.1", { env: { PI_PROVIDER: "openai" } }),
       promptFile: "./.sandcastle/implement-prompt.md",
     });
 
@@ -101,7 +101,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     await sandbox.run({
       name: "reviewer",
       maxIterations: 1,
-      agent: sandcastle.pi("gpt-5.4", { env: { PI_PROVIDER: "openai" } }),
+      agent: sandcastle.pi("gpt-4.1", { env: { PI_PROVIDER: "openai" } }),
       promptFile: "./.sandcastle/review-prompt.md",
       promptArgs: {
         BRANCH: branch,
