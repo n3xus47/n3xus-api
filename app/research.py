@@ -1,10 +1,10 @@
 import json
 from urllib.parse import urlparse
 
-from app.llm import generate
+from app.llm import LlmError, generate
 from app.models import Page, SearchResult, WebsiteScrapeRequest
 from app.scraper import scrape_website
-from app.search import search_web
+from app.search import SearchError, build_search_variants, search_web_fused
 
 MAX_EVIDENCE_PAGES = 6
 MAX_RESULTS_PER_QUERY = 5
@@ -22,9 +22,12 @@ Context: {context or ""}"""
             cleaned = [item.strip() for item in queries if isinstance(item, str) and item.strip()]
             if 2 <= len(cleaned) <= 4 and len(set(cleaned)) == len(cleaned):
                 return cleaned
-    except (json.JSONDecodeError, TypeError):
+    except (json.JSONDecodeError, TypeError, LlmError):
         pass
-    return [query.strip()] if query.strip() else [query]
+    cleaned = query.strip()
+    if cleaned:
+        return build_search_variants(cleaned, limit=4)
+    return [query]
 
 
 def _registrable_domain(url: str) -> str:
@@ -131,7 +134,11 @@ async def research(query: str, context: str | None) -> dict:
     batches: list[tuple[str, list[SearchResult]]] = []
     queries_with_results = 0
     for search_query in search_plan:
-        results, _ = await search_web(search_query, MAX_RESULTS_PER_QUERY)
+        try:
+            fusion = await search_web_fused(search_query, MAX_RESULTS_PER_QUERY)
+            results = fusion.results
+        except SearchError:
+            results = []
         if results:
             queries_with_results += 1
         batches.append((search_query, results))
@@ -159,12 +166,23 @@ async def research(query: str, context: str | None) -> dict:
     numbered = "\n\n".join(
         f"[{item['index']}] {item['url']}\n{item.get('excerpt') or ''}" for item in evidence if item.get("excerpt")
     )
-    answer = await generate(
+    synthesis_prompt = (
         "Answer the research question using only the numbered evidence below. "
         "Every factual claim must cite one or more evidence numbers like [1]. "
         "If the evidence is insufficient, say so explicitly and do not invent facts.\n"
         f"Question: {query}\nContext: {context or ''}\n\nEvidence:\n{numbered or '(no evidence collected)'}"
     )
+    try:
+        answer = await generate(synthesis_prompt)
+    except LlmError:
+        if not evidence:
+            answer = "No public evidence could be collected for this question with the current search configuration."
+        else:
+            answer = (
+                "Local LLM is unavailable; summarized evidence only:\n\n"
+                + numbered
+                + "\n\nConfigure Ollama and pull the model named in N3XUS_API_OLLAMA_MODEL for a synthesized answer."
+            )
 
     sources = [{"url": item["url"], "title": item.get("title")} for item in evidence]
     return {

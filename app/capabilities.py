@@ -20,7 +20,16 @@ class Capability:
 
 REGISTRY = (
     Capability("scrape.website", "structured", "readability-playwright", ("JavaScript fallback is best-effort.",), "website"),
-    Capability("search.web", "best_effort", "searxng", ("Results depend on configured SearxNG engines.",), "search"),
+    Capability(
+        "search.web",
+        "best_effort",
+        "searxng+duckduckgo",
+        (
+            "Fuses self-hosted SearxNG with DuckDuckGo (ddgs), dedupes by URL, and ranks by query relevance.",
+            "SearxNG engine quality still depends on local configuration.",
+        ),
+        "search",
+    ),
     Capability(
         "research.deep",
         "experimental",

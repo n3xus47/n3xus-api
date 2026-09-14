@@ -5,6 +5,8 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_prefix="N3XUS_API_")
 
     searxng_url: str = "http://searxng:8080"
+    search_ddg_enabled: bool = True
+    search_variant_limit: int = 5
     request_timeout_secs: float = 25
     browser_fallback: bool = True
     user_agent: str = "n3xusAPI/0.2 (+local self-hosted API)"

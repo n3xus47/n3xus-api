@@ -4,9 +4,11 @@ Review the code changes on branch `{{BRANCH}}` and improve code clarity, consist
 
 # CONTEXT
 
-## Branch diff
+## Branch diff (stat only — full diff exceeds Cursor CLI prompt limit)
 
-!`git diff main...{{BRANCH}}`
+!`git diff main...{{BRANCH}} --stat`
+
+Run `git diff main...{{BRANCH}}` locally when you need line-level detail. Review changed files directly; do not require the full diff in this prompt.
 
 ## Commits on this branch
 

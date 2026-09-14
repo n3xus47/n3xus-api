@@ -64,10 +64,16 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
     async def fake_plan(_query, _context):
         return ["q1", "q2"]
 
+    from app.search import SearchFusionOutcome
+
     async def fake_search(query, _max):
         if query == "q1":
-            return [SearchResult(title="A", url="https://a.example/page", snippet="sa")], None
-        return [SearchResult(title="B", url="https://b.example/page", snippet="sb")], None
+            return SearchFusionOutcome(
+                [SearchResult(title="A", url="https://a.example/page", snippet="sa")], None, ("searxng",)
+            )
+        return SearchFusionOutcome(
+            [SearchResult(title="B", url="https://b.example/page", snippet="sb")], None, ("searxng",)
+        )
 
     async def fake_scrape(_request):
         return [
@@ -85,7 +91,7 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
         return "Asyncio is a concurrency library [1][2]."
 
     monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
-    monkeypatch.setattr("app.research.search_web", fake_search)
+    monkeypatch.setattr("app.research.search_web_fused", fake_search)
     monkeypatch.setattr("app.research.scrape_website", fake_scrape)
     monkeypatch.setattr("app.research.generate", fake_generate)
 

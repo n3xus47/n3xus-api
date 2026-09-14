@@ -3,7 +3,29 @@ server:
   secret_key: "change-this-before-sharing"
   bind_address: "0.0.0.0"
   port: 8080
+  limiter: false
 search:
+  safe_search: 0
   formats:
     - html
     - json
+  default_lang: "en"
+outgoing:
+  request_timeout: 10.0
+  max_request_timeout: 15.0
+
+# Default meta engines often rate-limit or CAPTCHA on fresh IPs; prefer stable general search.
+engines:
+  - name: duckduckgo
+    disabled: false
+    weight: 0.5
+  - name: brave
+    disabled: true
+  - name: google
+    disabled: true
+  - name: bing
+    disabled: false
+    weight: 2.0
+  - name: startpage
+    disabled: false
+    weight: 1.0

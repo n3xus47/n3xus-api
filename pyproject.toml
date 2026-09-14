@@ -5,6 +5,7 @@ description = "Local, self-hosted real-world tools API"
 requires-python = ">=3.12"
 dependencies = [
   "beautifulsoup4>=4.12",
+  "ddgs>=9.0",
   "docker>=7.1",
   "fastapi>=0.115",
   "faster-whisper>=1.1",

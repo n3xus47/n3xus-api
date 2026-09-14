@@ -83,8 +83,10 @@ async def test_local_adapters_support_free_dry_runs(client, path, payload):
 
 
 async def test_external_adapters_emit_source_provenance(client, monkeypatch):
+    from app.search import SearchFusionOutcome
+
     async def fake_search(_, __):
-        return [], None
+        return SearchFusionOutcome([], None, ("searxng",))
 
     async def fake_github(_):
         return [{"login": "octocat"}]
@@ -92,7 +94,7 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
     async def fake_places(_):
         return {"attribution": "© OpenStreetMap contributors", "businesses": [{"name": "Coffee"}], "places": [{"name": "Coffee"}]}
 
-    monkeypatch.setattr("app.main.search_web", fake_search)
+    monkeypatch.setattr("app.main.search_web_fused", fake_search)
     monkeypatch.setattr("app.main.github_profile", fake_github)
     monkeypatch.setattr("app.main.google_places", fake_places)
     monkeypatch.setattr("app.main.search_open_business", fake_places)

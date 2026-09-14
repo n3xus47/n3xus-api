@@ -30,7 +30,7 @@ from app.public_sources import amazon, facebook, google_places, instagram_hashta
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
 from app.scraper import scrape_website, website_collection_state
-from app.search import SearchError, search_web
+from app.search import SearchError, search_web_fused
 from app.seo import competitors as seo_competitors, rank as seo_rank
 from app.seo_adapters import keyword_metrics as seo_keyword_metrics, provenance_name as seo_provenance_name
 from app.store import (create_email_domain, create_email_identity, delete_email_domain, delete_memory,
@@ -107,8 +107,14 @@ def persist(route: str, request: Request, body: dict, dry_run: bool) -> dict:
 
 
 @app.exception_handler(LlmError)
-async def llm_error_handler(_: Request, error: LlmError) -> JSONResponse:
-    return failure("/v1/research/deep", "research.deep", "capability_not_configured", str(error), 501)
+async def llm_error_handler(request: Request, error: LlmError) -> JSONResponse:
+    path = request.url.path
+    capability = "research.deep"
+    if path.startswith("/v1/scrape/extract"):
+        capability = "scrape.extract"
+    elif path.startswith("/v1/browser/act"):
+        capability = "browser.act"
+    return failure(path, capability, "capability_not_configured", str(error), 501)
 
 
 @app.exception_handler(PdfError)
@@ -213,13 +219,14 @@ async def search(request: WebSearchRequest, raw: Request):
         return replay
     if request.dry_run:
         return envelope(route="/v1/search/web", capability="search.web", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
-    results, answer = await search_web(request.query, request.max_results)
-    output = {"results": [result.model_dump(by_alias=True, exclude_none=True) for result in results]}
-    if answer:
-        output["answer"] = answer
+    fusion = await search_web_fused(request.query, request.max_results)
+    output = {"results": [result.model_dump(by_alias=True, exclude_none=True) for result in fusion.results]}
+    if fusion.answer:
+        output["answer"] = fusion.answer
+    provider = "+".join(fusion.providers) if fusion.providers else "searxng"
     return persist("/v1/search/web", raw, envelope(
         route="/v1/search/web", capability="search.web", output=output,
-        source=provenance("searxng", [result.url for result in results], "complete" if results else "empty"),
+        source=provenance(provider, [result.url for result in fusion.results], "complete" if fusion.results else "empty"),
     ), False)
 
 

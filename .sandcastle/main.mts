@@ -21,8 +21,22 @@
 // Or add to package.json:
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.mts" }
 
+import { execSync } from "node:child_process";
+
 import * as sandcastle from "@ai-hero/sandcastle";
 import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
+
+const REPO_ROOT = process.cwd();
+
+function mergeSandboxBranchToMain(branch: string): void {
+  try {
+    execSync("git checkout main", { cwd: REPO_ROOT, stdio: "inherit" });
+    execSync(`git merge --no-edit "${branch}"`, { cwd: REPO_ROOT, stdio: "inherit" });
+    console.log(`Merged ${branch} into main.`);
+  } catch (error) {
+    console.error(`Merge to main failed for ${branch}:`, error);
+  }
+}
 
 const CURSOR_MODEL = "composer-2.5-fast";
 const cursorAgent = () =>
@@ -119,6 +133,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     });
 
     console.log("\nReview complete.");
+    mergeSandboxBranchToMain(branch);
   } finally {
     await sandbox.close();
   }

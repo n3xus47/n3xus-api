@@ -13,6 +13,8 @@ services:
     depends_on:
       searxng:
         condition: service_started
+      ollama:
+        condition: service_started
 
   searxng:
     image: searxng/searxng:latest

@@ -55,9 +55,12 @@ Brak bloku `source` oznacza, że provenance nie zostało jeszcze znormalizowane 
 
 ```bash
 docker compose up --build
+# Service name "ollama", then the binary inside the container (not "docker compose exec ollama pull …"):
 docker compose exec ollama ollama pull qwen3:8b
 curl http://localhost:8000/v1/health
 ```
+
+Research and extract work **without** Ollama (evidence-only / rule-based fallbacks). Pull the model only when you want synthesized answers from local LLM — still free, runs on your hardware.
 
 Dokumentacja OpenAPI: `http://localhost:8000/docs`.
 
