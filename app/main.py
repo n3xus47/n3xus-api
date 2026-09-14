@@ -15,6 +15,7 @@ from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance, strip_collection_state
 from app.pdf import PdfError, extract_pdf
 from app.instagram_public import instagram_collect
+from app.meta_ads import MetaAdsError, provenance_library_urls
 from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
@@ -295,6 +296,8 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "invalid_request", str(error), 400)
     except EmailError as error:
         return failure(route, capability, "email_not_configured", str(error), 503)
+    except MetaAdsError as error:
+        return failure(route, capability, "meta_ads_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
     output, collection_state = strip_collection_state(output)
@@ -305,10 +308,17 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         "scrape.twitter": "public-x-pages",
         "scrape.instagram": "instagram-public-og",
         "scrape.facebook": "public-facebook-pages",
+        "scrape.facebook.ads": "meta-ads-library-api",
         "scrape.tiktok": "public-tiktok-pages",
         "scrape.threads": "public-threads-pages",
     }.get(capability)
-    source = provenance(source_name, state=collection_state) if source_name else None
+    if capability == "scrape.facebook.ads" and isinstance(output, dict) and source_name:
+        urls = provenance_library_urls(output)
+        source = provenance(source_name, urls, "complete" if urls else "empty")
+    elif source_name:
+        source = provenance(source_name, state=collection_state)
+    else:
+        source = None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)
 
 
@@ -354,7 +364,10 @@ async def public_source_endpoint(provider: str, resource: str, payload: dict, ra
     }
     if resource not in supported.get(provider, set()):
         return failure(raw.url.path, None, "unknown_capability", "Unsupported local public-source endpoint.", 404)
-    capability = f"scrape.{provider}"
+    if provider == "facebook" and resource == "ads":
+        capability = "scrape.facebook.ads"
+    else:
+        capability = f"scrape.{provider}"
     if provider == "facebook":
         action = lambda: facebook(payload, resource)
     elif provider == "instagram":

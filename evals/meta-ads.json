@@ -1,0 +1,17 @@
+[
+  {
+    "id": "meta-ads-us-search",
+    "capability": "scrape.facebook.ads",
+    "route": "/v1/scrape/facebook/ads",
+    "payload": {"query": "climate", "countries": ["US"], "maxItems": 5},
+    "required": [
+      "output.ads",
+      "output.ads.*.id",
+      "output.ads.*.libraryUrl",
+      "output.ads.*.copy.bodies",
+      "output.ads.*.creative.snapshotUrl",
+      "output.ads.*.dates.deliveryStart",
+      "output.ads.*.platforms"
+    ]
+  }
+]

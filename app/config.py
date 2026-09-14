@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     uploads_dir: str = "data/uploads"
     stable_diffusion_url: str | None = None
     vm_host_data_dir: str | None = None
+    meta_ads_access_token: str | None = None
 
 
 settings = Settings()

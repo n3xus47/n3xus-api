@@ -36,7 +36,17 @@ REGISTRY = (
         ),
         "social",
     ),
-    Capability("scrape.facebook", "best_effort", "public-page-fetch-search", ("This is not a structured Meta Ads or group-post collector.",), "social"),
+    Capability(
+        "scrape.facebook.ads",
+        "structured",
+        "meta-ads-library-api",
+        (
+            "Requires N3XUS_API_META_ADS_ACCESS_TOKEN with Meta Ads Library API access.",
+            "Landing URLs are omitted unless Meta exposes them in the API response.",
+        ),
+        "meta-ads",
+    ),
+    Capability("scrape.facebook", "best_effort", "public-facebook-pages", ("Facebook groups use generic public page fetch only.",), "social"),
     Capability("scrape.tiktok", "best_effort", "public-page-fetch", ("This is not a structured TikTok data collector.",), "social"),
     Capability(
         "scrape.amazon",
