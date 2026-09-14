@@ -42,7 +42,16 @@ REGISTRY = (
     Capability("company.enrich", "best_effort", "public-company-pages", ("Only homepage metadata is currently collected.",), "contact"),
     Capability("seo.read", "best_effort", "searxng-ollama", ("Keyword volume, CPC, difficulty and trend data are unavailable.",), "seo"),
     Capability("browser.act", "experimental", "playwright-ollama", ("Public pages only; bounded to eight safe browser steps.",), "browser"),
-    Capability("audio.transcribe", "structured", "faster-whisper", ("CPU inference is the default and can be slow.",), "transcribe"),
+    Capability(
+        "audio.transcribe",
+        "structured",
+        "faster-whisper",
+        (
+            "CPU inference is the default and can be slow.",
+            "Optional CUDA via N3XUS_API_TRANSCRIPTION_DEVICE=cuda with a matching ctranslate2 GPU build.",
+        ),
+        "transcribe",
+    ),
     Capability("vm.run", "structured", "local-docker", ("Requires Docker socket access; localhost only.",), "vm"),
     Capability("generate.image", "experimental", "automatic1111", ("Requires a user-configured local Stable Diffusion server.",), "image"),
     Capability("memory.read", "structured", "local-sqlite", (), "memory"),

@@ -1,6 +1,9 @@
 # Evaluation harness
 
 Start the local API and its desired local dependencies, then run `npm run eval`.
+For local faster-whisper quality and latency on committed legal audio fixtures, run
+`npm run eval:transcribe` (see `evals/transcribe/FIXTURES.md`). That command calls
+the transcription adapter directly; it does not require the HTTP API to be running.
 No credentials are required. A configured API that requires authentication will be
 reported as HTTP 401; the harness does not load or send secrets. It accepts only a
 localhost HTTP API origin, disables proxy environment settings, and follows no API
