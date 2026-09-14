@@ -129,6 +129,35 @@ async def test_scrape_website_reports_seed_outcomes_and_deduplicates_crawl(monke
     assert calls.count("https://example.com/dup/") == 1
 
 
+async def test_scrape_website_playwright_fallback_when_httpx_blocked(monkeypatch):
+    wiki_html = """
+    <html lang='en'><head><title>HTTP - Wikipedia</title></head>
+    <body><main><h1>Hypertext Transfer Protocol</h1>
+    <p>HTTP is an application layer protocol for distributed hypermedia information systems.</p></main></body></html>
+    """
+
+    async def fake_fetch(_url: str):
+        raise FetchFailure("blocked", "HTTP 403")
+
+    async def fake_render(url: str):
+        assert url == "https://en.wikipedia.org/wiki/HTTP"
+        return (wiki_html, url)
+
+    monkeypatch.setattr("app.scraper.fetch_html", fake_fetch)
+    monkeypatch.setattr("app.scraper.settings.browser_fallback", True)
+    monkeypatch.setattr("app.browser.render_html", fake_render)
+
+    pages, outcomes, _ = await scrape_website(
+        WebsiteScrapeRequest(urls="https://en.wikipedia.org/wiki/HTTP", contentFormat="text")
+    )
+
+    assert len(pages) == 1
+    assert "Hypertext Transfer Protocol" in (pages[0].text or "")
+    assert outcomes == [
+        {"url": "https://en.wikipedia.org/wiki/HTTP", "status": "returned", "detail": "js_rendered"}
+    ]
+
+
 async def test_scrape_website_uses_js_rendered_final_url(monkeypatch):
     async def fake_fetch(url: str):
         return ("<html><body><div id='app'></div></body></html>", "https://example.com/landing")

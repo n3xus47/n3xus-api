@@ -7,7 +7,7 @@ from app.scraper import ScrapeError, assert_public_url
 
 
 async def render_html(url: str) -> tuple[str, str]:
-    """Render a public page only after the regular HTTP extractor found no content."""
+    """Render a public page when httpx is blocked or returned too little extractable content."""
     await assert_public_url(url)
     try:
         async with async_playwright() as playwright:

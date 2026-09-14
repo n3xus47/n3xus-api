@@ -198,28 +198,42 @@ class PageLoadResult(NamedTuple):
     html: str | None
 
 
+async def _browser_render(url: str) -> tuple[str, str, str | None]:
+    from app.browser import render_html
+
+    html, final_url = await render_html(url)
+    if looks_blocked_html(html):
+        raise FetchFailure("blocked", "Blocked or challenge page detected")
+    return html, final_url, "js_rendered"
+
+
 async def _load_page(url: str, content_format: str | None, max_chars: int) -> PageLoadResult:
+    html: str | None = None
+    final_url = url
+    render_detail: str | None = None
+
     try:
         html, final_url = await fetch_html(url)
     except Exception as error:
         reason, detail = _failure_reason(error)
-        return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
+        if settings.browser_fallback and reason == "blocked":
+            try:
+                html, final_url, render_detail = await _browser_render(url)
+            except Exception as browser_error:
+                browser_reason, browser_detail = _failure_reason(browser_error)
+                return PageLoadResult(
+                    None, url, None, _failure_token(browser_reason, browser_detail), None
+                )
+        else:
+            return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
 
     page = extract_page(html, final_url, content_format, max_chars)
     content = page.markdown or page.text or ""
-    render_detail = None
-    if settings.browser_fallback and len(content) < 200:
-        from app.browser import render_html
-
+    if settings.browser_fallback and len(content) < 200 and render_detail is None:
         try:
-            html, final_url = await render_html(final_url)
+            html, final_url, render_detail = await _browser_render(final_url)
             page = extract_page(html, final_url, content_format, max_chars)
-            render_detail = "js_rendered"
             content = page.markdown or page.text or ""
-            if looks_blocked_html(html):
-                return PageLoadResult(
-                    None, final_url, None, _failure_token("blocked", "Blocked or challenge page detected"), None
-                )
         except Exception as error:
             reason, detail = _failure_reason(error)
             if content:
