@@ -39,3 +39,13 @@ corpus lives in `evals/m1-corpus.json` (90 lawful public cases, 10 per suite).
 Run `npm run eval -- --fixtures evals/m1-corpus.json --output docs/evals/m1-baseline.md --timeout 180` and commit the generated `docs/evals/m1-baseline.md` and
 `docs/evals/m1-baseline.json` as the reproducible baseline. Support levels and
 evaluation workflow are documented in the root `README.md`.
+
+Browser act benchmarks live in `evals/browser-act.json`. They require local
+Chromium (Playwright) and Ollama with the configured model. Success depends on
+the planner completing read, filter, sort, or pagination tasks on lawful public
+demo pages; inspect `output.trace` for plan/execute steps and blocked actions.
+
+Deep research benchmarks live in `evals/research.json`. They require SearxNG,
+Playwright/Chromium for page collection, and Ollama. Review `output.searchPlan`,
+`output.evidence`, and `output.completeness` rather than treating the answer alone
+as proof of quality.

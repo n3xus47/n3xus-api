@@ -21,7 +21,16 @@ class Capability:
 REGISTRY = (
     Capability("scrape.website", "structured", "readability-playwright", ("JavaScript fallback is best-effort.",), "website"),
     Capability("search.web", "best_effort", "searxng", ("Results depend on configured SearxNG engines.",), "search"),
-    Capability("research.deep", "experimental", "searxng-ollama", ("Evidence coverage and synthesis depend on local search and model quality.",), "research"),
+    Capability(
+        "research.deep",
+        "experimental",
+        "searxng-ollama",
+        (
+            "Runs a multi-query search plan, dedupes diverse public sources, and returns numbered evidence with provenance.",
+            "Completeness is empty, partial, or complete based on collected evidence—not model confidence.",
+        ),
+        "research",
+    ),
     Capability("scrape.github", "structured", "github-public-rest", ("Unauthenticated GitHub rate limits apply.",), "github"),
     Capability(
         "scrape.youtube",
@@ -92,14 +101,41 @@ REGISTRY = (
     Capability("scrape.threads", "best_effort", "public-page-fetch", ("This is not a structured Threads post collector.",), "social"),
     Capability("scrape.extract", "experimental", "readability-ollama", ("Extraction quality depends on the local model.",), "extract"),
     Capability("scrape.deep", "experimental", "searxng-ollama", ("This is a local research dossier, not a dedicated entity-data source.",), "research"),
-    Capability("email.send", "structured", "local-smtp", ("Sending requires user-configured SMTP.",), "email"),
+    Capability(
+        "email.send",
+        "structured",
+        "local-smtp",
+        (
+            "Sending requires user-configured SMTP; draft-first when SMTP is absent.",
+            "Successful sends record relay handoff metadata, not inbox lifecycle events.",
+        ),
+        "email",
+    ),
     Capability("email.read", "structured", "local-sqlite", ("Only messages sent or drafted through n3xusAPI are stored.",), "email"),
     Capability("email.find", "best_effort", "public-company-pages", ("Only explicitly published addresses are returned; addresses are never guessed.",), "contact"),
     Capability("email.verify", "unavailable", "syntax-check", ("Mailbox deliverability verification is not implemented.",), "contact"),
     Capability("email.enrich", "unavailable", "none", ("Person-data enrichment is not implemented.",), "contact"),
-    Capability("company.enrich", "best_effort", "public-company-pages", ("Only homepage metadata is currently collected.",), "contact"),
+    Capability(
+        "company.enrich",
+        "best_effort",
+        "public-company-pages",
+        (
+            "Collects homepage, about, and contact pages on the same domain only.",
+            "Each populated field includes provenance; absent fields stay omitted rather than inferred.",
+        ),
+        "company-enrich",
+    ),
     Capability("seo.read", "best_effort", "searxng-ollama", ("Keyword volume, CPC, difficulty and trend data are unavailable.",), "seo"),
-    Capability("browser.act", "experimental", "playwright-ollama", ("Public pages only; bounded to eight safe browser steps.",), "browser"),
+    Capability(
+        "browser.act",
+        "experimental",
+        "playwright-ollama",
+        (
+            "Public pages only; bounded to eight safe browser steps.",
+            "Returns a plan/execute safe-action trace for audit; unsafe actions are blocked before execution.",
+        ),
+        "browser-act",
+    ),
     Capability(
         "audio.transcribe",
         "structured",

@@ -70,3 +70,29 @@ def test_m1_corpus_has_ten_public_cases_per_suite():
     expected = dict.fromkeys(M1_SUITES, M1_CASES_PER_SUITE)
     assert len(cases) == len(M1_SUITES) * M1_CASES_PER_SUITE
     assert by_suite == expected
+
+
+def test_browser_act_fixtures_validate():
+    cases = validate_cases([
+        {
+            "id": "browser-read",
+            "capability": "browser.act",
+            "route": "/v1/browser/act",
+            "payload": {"task": "Read the heading", "startUrl": "https://example.com"},
+            "required": ["output.trace", "output.trace.*.phase"],
+        }
+    ])
+    assert cases[0]["capability"] == "browser.act"
+
+
+def test_research_fixtures_validate():
+    cases = validate_cases([
+        {
+            "id": "research-smoke",
+            "capability": "research.deep",
+            "route": "/v1/research/deep",
+            "payload": {"query": "Example topic"},
+            "required": ["output.searchPlan", "output.evidence", "output.completeness"],
+        }
+    ])
+    assert cases[0]["route"] == "/v1/research/deep"

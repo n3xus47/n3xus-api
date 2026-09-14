@@ -24,7 +24,7 @@ def validate_cases(cases):
         if not get_capability(case.get("capability")):
             raise ValueError("Unknown fixture capability")
         route = case.get("route", "")
-        if not route.startswith(("/v1/scrape/", "/v1/search/", "/v1/research/", "/v1/seo/")) or "?" in route or "#" in route:
+        if not route.startswith(("/v1/scrape/", "/v1/search/", "/v1/research/", "/v1/seo/", "/v1/browser/", "/v1/company/")) or "?" in route or "#" in route:
             raise ValueError("Fixtures must target local public-data routes")
         if not isinstance(case.get("payload"), dict) or case["payload"].get("dryRun"):
             raise ValueError("Fixtures require a payload and must execute real work")

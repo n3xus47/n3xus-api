@@ -1,0 +1,42 @@
+[
+  {
+    "id": "browser-read-example",
+    "capability": "browser.act",
+    "route": "/v1/browser/act",
+    "payload": {
+      "task": "Read the main heading shown on the page and answer with that text.",
+      "startUrl": "https://example.com"
+    },
+    "required": ["output.isSuccess", "output.result", "output.url", "output.trace", "output.trace.*.phase", "output.trace.*.step"]
+  },
+  {
+    "id": "browser-pagination-books",
+    "capability": "browser.act",
+    "route": "/v1/browser/act",
+    "payload": {
+      "task": "Open the next page of the catalogue using pagination controls and report the first book title shown.",
+      "startUrl": "https://books.toscrape.com/"
+    },
+    "required": ["output.result", "output.url", "output.trace", "output.trace.*.phase"]
+  },
+  {
+    "id": "browser-filter-books",
+    "capability": "browser.act",
+    "route": "/v1/browser/act",
+    "payload": {
+      "task": "Use the sidebar category filter for Travel and report the first book title listed.",
+      "startUrl": "https://books.toscrape.com/"
+    },
+    "required": ["output.result", "output.url", "output.trace", "output.trace.*.phase"]
+  },
+  {
+    "id": "browser-sort-books",
+    "capability": "browser.act",
+    "route": "/v1/browser/act",
+    "payload": {
+      "task": "Change the sort order to Price: high to low and report the first book title shown.",
+      "startUrl": "https://books.toscrape.com/"
+    },
+    "required": ["output.result", "output.url", "output.trace", "output.trace.*.phase"]
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "research-asyncio-overview",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {"query": "What is asyncio in Python and when should it be used?"},
+    "required": [
+      "output.answer",
+      "output.searchPlan",
+      "output.evidence",
+      "output.completeness",
+      "output.sources",
+      "output.evidence.*.url",
+      "output.evidence.*.collectionState"
+    ]
+  }
+]
