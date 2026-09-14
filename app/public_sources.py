@@ -97,19 +97,6 @@ async def amazon(payload: dict, resource: str) -> dict:
 
 
 async def google_places(payload: dict) -> dict:
-    search = payload.get("search")
-    if not isinstance(search, str) or not search:
-        raise ValueError("search is required")
-    location = payload.get("location")
-    query = f"{search}, {location}" if isinstance(location, str) else search
-    try:
-        async with httpx.AsyncClient(timeout=20, headers={"User-Agent": "n3xusAPI local tools"}) as client:
-            response = await client.get(
-                "https://nominatim.openstreetmap.org/search",
-                params={"q": query, "format": "jsonv2", "addressdetails": 1, "limit": min(int(payload.get("maxItems", 10)), 50)},
-            )
-            response.raise_for_status()
-            rows = response.json()
-    except (httpx.HTTPError, ValueError) as error:
-        raise RuntimeError("OpenStreetMap public geocoder is unavailable") from error
-    return {"places": [{"name": row.get("display_name"), "address": row.get("display_name"), "latitude": row.get("lat"), "longitude": row.get("lon"), "category": row.get("type"), "sourceUrl": row.get("osm_url")} for row in rows]}
+    from app.open_business import search_open_business
+
+    return await search_open_business(payload)

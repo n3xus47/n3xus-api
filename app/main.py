@@ -14,6 +14,7 @@ from app.github import GitHubError, contents as github_contents, list_resource a
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance
 from app.pdf import PdfError, extract_pdf
+from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
@@ -297,6 +298,7 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "request_failed", str(error), 502)
     source_name = {
         "scrape.google": "openstreetmap-nominatim",
+        "scrape.open-business": "openstreetmap-nominatim",
         "scrape.amazon": "public-amazon-pages",
         "scrape.twitter": "public-x-pages",
         "scrape.instagram": "public-instagram-pages",
@@ -321,6 +323,11 @@ async def instagram_hashtag_endpoint(payload: dict, raw: Request):
 @app.post("/v1/scrape/google/places")
 async def google_places_endpoint(payload: dict, raw: Request):
     return await public_source_response(raw.url.path, "scrape.google", payload, raw, lambda: google_places(payload))
+
+
+@app.post("/v1/scrape/open-business/search")
+async def open_business_search_endpoint(payload: dict, raw: Request):
+    return await public_source_response(raw.url.path, "scrape.open-business", payload, raw, lambda: search_open_business(payload))
 
 
 @app.post("/v1/scrape/threads/posts")

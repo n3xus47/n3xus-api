@@ -30,7 +30,26 @@ REGISTRY = (
     Capability("scrape.facebook", "best_effort", "public-page-fetch-search", ("This is not a structured Meta Ads or group-post collector.",), "social"),
     Capability("scrape.tiktok", "best_effort", "public-page-fetch", ("This is not a structured TikTok data collector.",), "social"),
     Capability("scrape.amazon", "best_effort", "public-page-fetch-search", ("This is not a structured Amazon product or review collector.",), "amazon"),
-    Capability("scrape.google", "best_effort", "openstreetmap-nominatim", ("Returns OpenStreetMap geocoding data, not Google Places data.",), "places"),
+    Capability(
+        "scrape.open-business",
+        "structured",
+        "openstreetmap-nominatim",
+        (
+            "OpenStreetMap Nominatim only; ratings and review counts are never returned.",
+            "Phone and website appear only when present in OSM tags.",
+        ),
+        "places",
+    ),
+    Capability(
+        "scrape.google",
+        "best_effort",
+        "openstreetmap-nominatim",
+        (
+            "Deprecated alias for /v1/scrape/open-business/search; not Google Places data.",
+            "Prefer scrape.open-business for structured open-business records.",
+        ),
+        "places",
+    ),
     Capability("scrape.threads", "best_effort", "public-page-fetch", ("This is not a structured Threads post collector.",), "social"),
     Capability("scrape.extract", "experimental", "readability-ollama", ("Extraction quality depends on the local model.",), "extract"),
     Capability("scrape.deep", "experimental", "searxng-ollama", ("This is a local research dossier, not a dedicated entity-data source.",), "research"),
