@@ -186,6 +186,39 @@ async def test_search_web_drops_low_relevance_junk(client, monkeypatch):
     assert body["source"]["collectionState"] == "empty"
 
 
+async def test_search_web_fusion_provenance_names_both_providers(client, monkeypatch):
+    from app.models import SearchResult
+
+    query = "Gordon Ramsay scrambled eggs recipe"
+    recipe = SearchResult(
+        title="Gordon Ramsay scrambled eggs",
+        url="https://www.bbcgoodfood.com/recipes/gordon-ramsays-scrambled-eggs",
+        snippet="Classic scrambled eggs recipe",
+    )
+
+    async def searxng_noise(_query, _max):
+        return (
+            [SearchResult(title="Zara", url="https://www.zara.com/", snippet="Fashion")],
+            None,
+        )
+
+    async def ddg_recipe(_query, max_results):
+        return [recipe][:max_results]
+
+    monkeypatch.setattr("app.search._searxng_search_optional", searxng_noise)
+    monkeypatch.setattr("app.search._ddg_search_optional", ddg_recipe)
+
+    response = await client.post(
+        "/v1/search/web",
+        headers={"Idempotency-Key": f"search-fusion-{uuid4()}"},
+        json={"query": query},
+    )
+    body = response.json()
+    assert response.status_code == 200
+    assert body["source"]["name"] == "searxng+duckduckgo"
+    assert body["output"]["results"][0]["url"] == recipe.url
+
+
 async def test_github_list_resources_return_normalized_pagination(client, monkeypatch):
     async def fake_list(*_args, **_kwargs):
         return {

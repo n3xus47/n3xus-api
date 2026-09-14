@@ -127,3 +127,76 @@ async def test_search_web_fused_ignores_searxng_variant_failures(monkeypatch):
     assert outcome.results
     assert "searxng" in outcome.providers
 
+
+async def test_search_web_fused_merge_prefers_on_topic_ddg_over_searxng_noise(monkeypatch):
+    query = "Gordon Ramsay scrambled eggs recipe"
+    noise = [
+        SearchResult(title="Zara top", url="https://www.zara.com/", snippet="Fashion"),
+        SearchResult(
+            title="Anthony Gordon",
+            url="https://www.transfermarkt.com/anthony-gordon/profil/spieler/1",
+            snippet="Footballer",
+        ),
+    ]
+    recipe = SearchResult(
+        title="Gordon Ramsay scrambled eggs",
+        url="https://www.bbcgoodfood.com/recipes/gordon-ramsays-scrambled-eggs",
+        snippet="Classic scrambled eggs recipe",
+    )
+
+    async def searxng_noise(_query, _max):
+        return noise, None
+
+    async def ddg_recipe(_query, max_results):
+        return [recipe][:max_results]
+
+    monkeypatch.setattr("app.search._searxng_search_optional", searxng_noise)
+    monkeypatch.setattr("app.search._ddg_search_optional", ddg_recipe)
+
+    outcome = await search_web_fused(query, 5, variant_limit=1)
+    assert outcome.results
+    assert outcome.results[0].url == recipe.url
+    assert outcome.providers == ("searxng", "duckduckgo")
+
+
+async def test_searxng_http_json_fused_with_mocked_ddg(monkeypatch):
+    """Contract: real SearxNG JSON parse + DDG batch merge without network."""
+    import app.search as search_mod
+
+    query = "Gordon Ramsay scrambled eggs recipe"
+    recipe = SearchResult(
+        title="Gordon Ramsay scrambled eggs",
+        url="https://www.bbcgoodfood.com/recipes/gordon-ramsays-scrambled-eggs",
+        snippet="Classic scrambled eggs recipe",
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.params.get("format") == "json"
+        payload = {
+            "results": [
+                {
+                    "title": "Zara top",
+                    "url": "https://www.zara.com/",
+                    "content": "Fashion picks",
+                }
+            ]
+        }
+        return httpx.Response(200, json=payload, request=request)
+
+    real_async_client = httpx.AsyncClient
+
+    def client_factory(**kwargs):
+        kwargs.setdefault("transport", httpx.MockTransport(handler))
+        return real_async_client(**kwargs)
+
+    def fake_ddg_sync(_query, max_results):
+        return [recipe][:max_results]
+
+    monkeypatch.setattr(search_mod.httpx, "AsyncClient", client_factory)
+    monkeypatch.setattr(search_mod, "_ddg_search_sync", fake_ddg_sync)
+
+    outcome = await search_web_fused(query, 5, variant_limit=1)
+    assert outcome.results[0].url == recipe.url
+    assert "searxng" in outcome.providers
+    assert "duckduckgo" in outcome.providers
+
