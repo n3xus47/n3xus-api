@@ -17,7 +17,7 @@ from app.pdf import PdfError, extract_pdf
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
-from app.scraper import scrape_website
+from app.scraper import scrape_website, website_collection_state
 from app.search import SearchError, search_web
 from app.seo import competitors as seo_competitors, rank as seo_rank
 from app.store import (create_email_domain, create_email_identity, delete_email_domain, delete_memory,
@@ -131,12 +131,19 @@ async def website(request: WebsiteScrapeRequest, raw: Request):
         return replay
     if request.dry_run:
         return envelope(route="/v1/scrape/website", capability="scrape.website", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
-    pages, outcomes = await scrape_website(request)
+    pages, outcomes, crawl_meta = await scrape_website(request)
+    list_meta: dict = {"listState": "has_results" if pages else "no_results"}
+    if crawl_meta:
+        list_meta["crawl"] = crawl_meta
     return persist("/v1/scrape/website", raw, envelope(
         route="/v1/scrape/website", capability="scrape.website",
         output=[page.model_dump(by_alias=True, exclude_none=True) for page in pages],
-        list={"listState": "has_results" if pages else "no_results"}, urlOutcomes=outcomes,
-        source=provenance("public-website", [page.url for page in pages] or request.url_list(), "complete" if pages else "empty"),
+        list=list_meta, urlOutcomes=outcomes,
+        source=provenance(
+            "public-website",
+            [page.url for page in pages] or request.url_list(),
+            website_collection_state(pages, outcomes or []),
+        ),
     ), False)
 
 
@@ -236,7 +243,7 @@ async def extract_endpoint(payload: dict, raw: Request):
         return replay
     if payload.get("dryRun"):
         return envelope(route=raw.url.path, capability="scrape.extract", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
-    pages, _ = await scrape_website(WebsiteScrapeRequest(urls=urls, contentFormat="markdown", maxChars=payload.get("maxChars", 250_000)))
+    pages, _, _ = await scrape_website(WebsiteScrapeRequest(urls=urls, contentFormat="markdown", maxChars=payload.get("maxChars", 250_000)))
     schema = payload.get("schema") or {"type": "object"}
     output = []
     for page in pages:

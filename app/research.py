@@ -6,7 +6,7 @@ from app.search import search_web
 
 async def research(query: str, context: str | None) -> dict:
     results, _ = await search_web(query, 5)
-    pages, _ = await scrape_website(
+    pages, _, _ = await scrape_website(
         WebsiteScrapeRequest(urls=[result.url for result in results[:5]], contentFormat="markdown", maxChars=20_000)
     )
     sources = [{"url": page.url, "title": page.title} for page in pages]

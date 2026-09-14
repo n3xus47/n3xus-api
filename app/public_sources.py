@@ -21,7 +21,7 @@ SOCIAL_HOSTS = {
 
 
 async def public_pages(urls: list[str], max_items: int = 10, max_chars: int = 100_000) -> dict:
-    pages, _ = await scrape_website(
+    pages, _, _ = await scrape_website(
         WebsiteScrapeRequest(urls=urls, contentFormat="markdown", maxPages=max_items, maxChars=max_chars)
     )
     return {

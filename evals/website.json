@@ -1,0 +1,112 @@
+[
+  {
+    "id": "website-01",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://example.com",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-02",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.example.org",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-03",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.iana.org/domains/example",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-04",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://en.wikipedia.org/wiki/HTTP",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-05",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://httpbin.org/html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-06",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-07",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://en.wikipedia.org/wiki/OpenStreetMap",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-08",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.gnu.org/licenses/gpl-3.0.en.html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-09",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://datatracker.ietf.org/doc/html/rfc7231",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  },
+  {
+    "id": "website-10",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://docs.python.org/3/license.html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  }
+]

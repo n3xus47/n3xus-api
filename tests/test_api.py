@@ -22,7 +22,7 @@ async def test_website_uses_compatible_envelope(client, monkeypatch):
     async def fake_scrape(_):
         return [Page(url="https://example.com", markdown="# Example", title="Example")], [
             {"url": "https://example.com", "status": "returned"}
-        ]
+        ], None
 
     monkeypatch.setattr("app.main.scrape_website", fake_scrape)
     response = await client.post(
