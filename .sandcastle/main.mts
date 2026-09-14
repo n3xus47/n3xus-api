@@ -22,7 +22,15 @@
 //   "scripts": { "sandcastle": "npx tsx .sandcastle/main.mts" }
 
 import * as sandcastle from "@ai-hero/sandcastle";
-import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
+import { noSandbox } from "@ai-hero/sandcastle/sandboxes/no-sandbox";
+
+const CURSOR_MODEL = "composer-2.5-fast";
+const cursorAgent = () =>
+  sandcastle.cursor(CURSOR_MODEL, {
+    env: {
+      PATH: `${process.env.HOME}/.local/bin:${process.env.PATH ?? ""}`,
+    },
+  });
 
 // ---------------------------------------------------------------------------
 // Configuration
@@ -30,7 +38,7 @@ import { docker } from "@ai-hero/sandcastle/sandboxes/docker";
 
 // Maximum number of implement→review cycles to run before stopping.
 // Each cycle works on one issue. Raise this to process more issues per run.
-const MAX_ITERATIONS = 1;
+const MAX_ITERATIONS = 25;
 
 // Hooks run inside the sandbox before the agent starts each iteration.
 // The project is Python; each isolated worktree receives its own environment.
@@ -56,9 +64,7 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
   // This gives both agents a real, named branch that persists across phases.
   const sandbox = await sandcastle.createSandbox({
     branch,
-    sandbox: docker({
-      mounts: [{ hostPath: "~/.codex/auth.json", sandboxPath: "~/.codex/auth.json", readonly: true }],
-    }),
+    sandbox: noSandbox(),
     hooks,
   });
 
@@ -79,8 +85,9 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     const implement = await sandbox.run({
       name: "implementer",
       maxIterations: 1,
-      agent: sandcastle.codex("gpt-6-astra"),
+      agent: cursorAgent(),
       promptFile: "./.sandcastle/implement-prompt.md",
+      idleTimeoutSeconds: 1800,
     });
 
     if (!implement.commits.length) {
@@ -103,8 +110,9 @@ for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
     await sandbox.run({
       name: "reviewer",
       maxIterations: 1,
-      agent: sandcastle.codex("gpt-6-astra"),
+      agent: cursorAgent(),
       promptFile: "./.sandcastle/review-prompt.md",
+      idleTimeoutSeconds: 1800,
       promptArgs: {
         BRANCH: branch,
       },
