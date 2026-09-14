@@ -34,3 +34,8 @@ source-specific fields rather than generic page text when evaluating adapters.
 The single public example-domain fixture proves the harness path only. The full
 M1 corpus and baseline belong to issue #2; this smoke report is not that baseline.
 README support documentation remains scoped to issue #3.
+
+Browser act benchmarks live in `evals/browser-act.json`. They require local
+Chromium (Playwright) and Ollama with the configured model. Success depends on
+the planner completing read, filter, sort, or pagination tasks on lawful public
+demo pages; inspect `output.trace` for plan/execute steps and blocked actions.

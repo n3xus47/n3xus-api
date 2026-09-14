@@ -53,3 +53,16 @@ async def test_transport_and_invalid_json_failures_continue():
 def test_invalid_fixtures(changes):
     with pytest.raises(ValueError):
         validate_cases([case(**changes)])
+
+
+def test_browser_act_fixtures_validate():
+    cases = validate_cases([
+        {
+            "id": "browser-read",
+            "capability": "browser.act",
+            "route": "/v1/browser/act",
+            "payload": {"task": "Read the heading", "startUrl": "https://example.com"},
+            "required": ["output.trace", "output.trace.*.phase"],
+        }
+    ])
+    assert cases[0]["capability"] == "browser.act"
