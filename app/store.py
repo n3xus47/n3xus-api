@@ -29,7 +29,7 @@ def _connection() -> sqlite3.Connection:
         );
         CREATE TABLE IF NOT EXISTS email_messages (
           id TEXT PRIMARY KEY, identity_id TEXT, recipient TEXT NOT NULL, subject TEXT NOT NULL,
-          text TEXT NOT NULL, sent_at TEXT NOT NULL
+          text TEXT NOT NULL, sent_at TEXT NOT NULL, delivery_json TEXT
         );
         CREATE TABLE IF NOT EXISTS email_domains (
           id TEXT PRIMARY KEY, domain TEXT UNIQUE NOT NULL, token TEXT NOT NULL,
@@ -37,6 +37,10 @@ def _connection() -> sqlite3.Connection:
         );
         """
     )
+    try:
+        connection.execute("ALTER TABLE email_messages ADD COLUMN delivery_json TEXT")
+    except sqlite3.OperationalError:
+        pass
     return connection
 
 
@@ -146,13 +150,19 @@ def remove_email_draft(draft_id: str) -> None:
         connection.execute("DELETE FROM email_drafts WHERE id = ?", (draft_id,))
 
 
-def save_email_message(recipient: str, subject: str, text: str, identity_id: str | None) -> dict:
+def save_email_message(recipient: str, subject: str, text: str, identity_id: str | None, delivery: dict | None = None) -> dict:
     from uuid import uuid4
     message_id = f"local_message_{uuid4().hex}"
     sent_at = utcnow()
     with _connection() as connection:
-        connection.execute("INSERT INTO email_messages VALUES (?, ?, ?, ?, ?, ?)", (message_id, identity_id, recipient, subject, text, sent_at))
-    return {"messageId": message_id, "to": recipient, "subject": subject, "text": text, "sentAt": sent_at}
+        connection.execute(
+            "INSERT INTO email_messages VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (message_id, identity_id, recipient, subject, text, sent_at, json.dumps(delivery) if delivery else None),
+        )
+    payload = {"messageId": message_id, "to": recipient, "subject": subject, "text": text, "sentAt": sent_at}
+    if delivery:
+        payload["delivery"] = delivery
+    return payload
 
 
 def list_email_domains() -> list[dict]:
@@ -187,5 +197,11 @@ def delete_email_domain(domain_id: str) -> bool:
 
 def list_email_messages() -> list[dict]:
     with _connection() as connection:
-        rows = connection.execute("SELECT id, recipient, subject, text, sent_at FROM email_messages ORDER BY sent_at DESC").fetchall()
-    return [{"messageId": row["id"], "to": row["recipient"], "subject": row["subject"], "text": row["text"], "sentAt": row["sent_at"]} for row in rows]
+        rows = connection.execute("SELECT id, recipient, subject, text, sent_at, delivery_json FROM email_messages ORDER BY sent_at DESC").fetchall()
+    items = []
+    for row in rows:
+        item = {"messageId": row["id"], "to": row["recipient"], "subject": row["subject"], "text": row["text"], "sentAt": row["sent_at"]}
+        if row["delivery_json"]:
+            item["delivery"] = json.loads(row["delivery_json"])
+        items.append(item)
+    return items
