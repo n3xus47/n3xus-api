@@ -64,6 +64,7 @@ async def test_dry_run_does_not_call_scraper(client, monkeypatch):
     ("/v1/email/send", {"to": "person@example.com", "subject": "Hi", "text": "Draft"}),
     ("/v1/seo/rank", {"keyword": "example", "domain": "example.com"}),
     ("/v1/browser/act", {"task": "Find the contact email", "startUrl": "https://example.com"}),
+    ("/v1/vm/run", {"code": "print(1)", "language": "python"}),
     ("/v1/transcribe/uploads", {"filename": "sample.mp3", "sizeBytes": 10}),
     ("/v1/transcribe", {"uploadId": "local_audio_example.mp3"}),
     ("/v1/scrape/deep", {"query": "Example"}),
@@ -106,6 +107,18 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
     assert search.json()["source"]["collectionState"] == "empty"
     assert github.json()["source"]["name"] == "github-public-rest"
     assert places.json()["source"]["name"] == "openstreetmap-nominatim"
+
+
+async def test_vm_run_rejects_non_localhost_client(client, monkeypatch):
+    monkeypatch.setattr("app.main.is_localhost_client", lambda _host: False)
+    response = await client.post(
+        "/v1/vm/run",
+        headers={"Idempotency-Key": f"vm-test-{uuid4()}"},
+        json={"code": "print(1)", "language": "python", "files": [], "outputFiles": []},
+    )
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "vm_localhost_only"
 
 
 async def test_capabilities_expose_truthful_support_metadata(client):
