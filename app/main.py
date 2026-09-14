@@ -25,7 +25,15 @@ from app.store import (create_email_domain, create_email_identity, delete_email_
                        list_email_drafts, list_email_identities, list_email_messages, list_memory, list_requests,
                        remove_email_draft, save_email_draft, save_request, set_email_domain_verified,
                        update_email_identity, write_memory)
-from app.youtube import YouTubeError, channel_videos as youtube_channel_videos, search_videos as youtube_search_videos, thumbnail as youtube_thumbnail, transcript as youtube_transcript
+from app.youtube import (
+    PROVENANCE_NAME as YOUTUBE_PROVENANCE,
+    YouTubeError,
+    channel_videos as youtube_channel_videos,
+    envelope_parts_from_action as youtube_envelope_parts,
+    search_videos as youtube_search_videos,
+    thumbnail as youtube_thumbnail,
+    transcript as youtube_transcript,
+)
 from app.transcribe import AudioError, create_upload, transcribe, write_upload
 from app.vm import VmError, output_file as vm_output_file, run as vm_run
 
@@ -209,19 +217,8 @@ async def youtube_response(route: str, payload: dict, raw: Request, action):
     if payload.get("dryRun"):
         return envelope(route=route, capability="scrape.youtube", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
     result = await action()
-    source_urls: list[str] = []
-    state = "complete"
-    if isinstance(result, dict) and "videos" in result:
-        source_urls = [url for url in result.get("sourceUrls", []) if isinstance(url, str)]
-        state = result.get("collectionState", "complete" if result["videos"] else "empty")
-        output = result["videos"]
-    else:
-        output = result
-        if isinstance(output, dict) and isinstance(output.get("sourceUrl"), str):
-            source_urls = [output["sourceUrl"]]
-        if isinstance(output, list):
-            state = "complete" if output else "empty"
-    source = provenance("yt-dlp-youtube-transcript", source_urls, state)
+    output, source_urls, state = youtube_envelope_parts(result)
+    source = provenance(YOUTUBE_PROVENANCE, source_urls, state)
     return persist(route, raw, envelope(route=route, capability="scrape.youtube", output=output, source=source), False)
 
 

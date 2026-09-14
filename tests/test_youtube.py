@@ -62,6 +62,25 @@ def test_filter_entries_excludes_shorts_from_channel_feed():
     assert [item["id"] for item in videos] == ["a"]
 
 
+def test_envelope_parts_from_video_list_result():
+    payload = {
+        "videos": [{"id": "x"}],
+        "sourceUrls": ["https://example.com/feed", 123],
+        "collectionState": "partial",
+    }
+    output, urls, state = yt.envelope_parts_from_action(payload)
+    assert output == [{"id": "x"}]
+    assert urls == ["https://example.com/feed"]
+    assert state == "partial"
+
+
+def test_envelope_parts_from_transcript_shape():
+    output, urls, state = yt.envelope_parts_from_action({"text": "hi", "sourceUrl": "https://youtu.be/x"})
+    assert output["text"] == "hi"
+    assert urls == ["https://youtu.be/x"]
+    assert state == "complete"
+
+
 async def test_channel_videos_merges_multiple_handles(monkeypatch):
     async def fake_batch(handle: str, shorts: bool, max_items: int):
         return {

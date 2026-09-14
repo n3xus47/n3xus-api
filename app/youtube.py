@@ -13,6 +13,9 @@ class YouTubeError(Exception):
     pass
 
 
+PROVENANCE_NAME = "yt-dlp-youtube-transcript"
+
+
 def video_id(url: str) -> str:
     parsed = urlparse(url)
     value = parse_qs(parsed.query).get("v", [None])[0] if parsed.hostname != "youtu.be" else parsed.path.strip("/")
@@ -74,7 +77,41 @@ def normalize_entries(entries: list[dict], *, feed: str = "videos", channel_hand
         normalized = [item for item in normalized if item.get("isShort")]
     elif feed == "videos":
         normalized = [item for item in normalized if not item.get("isShort")]
+    # feed "any" (e.g. search): no short vs long filtering
     return [item for item in normalized if item.get("id")]
+
+
+def _collection_state(videos: list[dict], *, fallback_used: bool = False) -> str:
+    if not videos:
+        return "empty"
+    if fallback_used:
+        return "partial"
+    return "complete"
+
+
+def _video_list_result(videos: list[dict], source_urls: list[str], *, fallback_used: bool = False) -> dict:
+    return {
+        "videos": videos,
+        "sourceUrls": source_urls,
+        "collectionState": _collection_state(videos, fallback_used=fallback_used),
+        "fallbackUsed": fallback_used,
+    }
+
+
+def envelope_parts_from_action(result: object) -> tuple[object, list[str], str]:
+    """Map handler return values to HTTP envelope output, provenance URLs, and collection state."""
+    if isinstance(result, dict) and "videos" in result:
+        source_urls = [url for url in result.get("sourceUrls", []) if isinstance(url, str)]
+        state = result.get("collectionState", _collection_state(result["videos"]))
+        return result["videos"], source_urls, state
+    output = result
+    source_urls: list[str] = []
+    state = "complete"
+    if isinstance(output, dict) and isinstance(output.get("sourceUrl"), str):
+        source_urls = [output["sourceUrl"]]
+    if isinstance(output, list):
+        state = "complete" if output else "empty"
+    return output, source_urls, state
 
 
 def _metadata(target: str, flat: bool = False) -> dict:
@@ -89,9 +126,16 @@ async def _extract_entries(target: str) -> list[dict]:
     return [entry for entry in entries if isinstance(entry, dict)]
 
 
+async def _extract_entries_or_fail(target: str) -> list[dict]:
+    try:
+        return await _extract_entries(target)
+    except Exception as error:
+        raise YouTubeError("YouTube metadata request failed") from error
+
+
 async def _channel_batch(handle: str, shorts: bool, max_items: int) -> dict:
-    tab = "shorts" if shorts else "videos"
-    primary = f"https://www.youtube.com/@{handle}/{tab}"
+    feed = "shorts" if shorts else "videos"
+    primary = f"https://www.youtube.com/@{handle}/{feed}"
     source_urls = [primary]
     fallback_used = False
     try:
@@ -104,17 +148,14 @@ async def _channel_batch(handle: str, shorts: bool, max_items: int) -> dict:
         fallback = f"https://www.youtube.com/@{handle}/videos"
         source_urls.append(fallback)
         fallback_used = True
-        try:
-            entries = await _extract_entries(fallback)
-        except Exception as error:
-            raise YouTubeError("YouTube metadata request failed") from error
-    videos = normalize_entries(entries, feed="shorts" if shorts else "videos", channel_handle=handle)[:max_items]
+        entries = await _extract_entries_or_fail(fallback)
+    videos = normalize_entries(entries, feed=feed, channel_handle=handle)[:max_items]
     return {"videos": videos, "sourceUrls": source_urls, "fallbackUsed": fallback_used}
 
 
 async def channel_videos(channels: list[str], shorts: bool, max_items: int) -> dict:
     if not channels:
-        return {"videos": [], "sourceUrls": [], "collectionState": "empty", "fallbackUsed": False}
+        return _video_list_result([], [])
     per_channel = max(1, max_items // len(channels))
     collected: list[dict] = []
     source_urls: list[str] = []
@@ -126,26 +167,14 @@ async def channel_videos(channels: list[str], shorts: bool, max_items: int) -> d
         collected.extend(batch["videos"])
         source_urls.extend(batch["sourceUrls"])
         fallback_used = fallback_used or batch["fallbackUsed"]
-    videos = collected[:max_items]
-    state = "complete" if videos else "empty"
-    if fallback_used and videos:
-        state = "partial"
-    return {"videos": videos, "sourceUrls": source_urls, "collectionState": state, "fallbackUsed": fallback_used}
+    return _video_list_result(collected[:max_items], source_urls, fallback_used=fallback_used)
 
 
 async def search_videos(query: str, max_items: int) -> dict:
     target = f"ytsearch{max_items}:{query}"
-    try:
-        entries = await _extract_entries(target)
-    except Exception as error:
-        raise YouTubeError("YouTube metadata request failed") from error
+    entries = await _extract_entries_or_fail(target)
     videos = normalize_entries(entries, feed="any")[:max_items]
-    return {
-        "videos": videos,
-        "sourceUrls": [target],
-        "collectionState": "complete" if videos else "empty",
-        "fallbackUsed": False,
-    }
+    return _video_list_result(videos, [target])
 
 
 async def transcript(url: str, include_segments: bool, max_chars: int) -> dict:
