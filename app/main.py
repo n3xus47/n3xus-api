@@ -14,6 +14,7 @@ from app.github import GitHubError, contents as github_contents, list_resource a
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance
 from app.pdf import PdfError, extract_pdf
+from app.instagram_public import instagram_collect
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
@@ -295,16 +296,25 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "email_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
+    collection_state = None
+    source_urls = None
+    if isinstance(output, dict):
+        collection_state = output.pop("collectionState", None)
+        source_urls = output.pop("sourceUrls", None)
     source_name = {
         "scrape.google": "openstreetmap-nominatim",
         "scrape.amazon": "public-amazon-pages",
         "scrape.twitter": "public-x-pages",
-        "scrape.instagram": "public-instagram-pages",
+        "scrape.instagram": "instagram-public-og",
         "scrape.facebook": "public-facebook-pages",
         "scrape.tiktok": "public-tiktok-pages",
         "scrape.threads": "public-threads-pages",
     }.get(capability)
-    source = provenance(source_name, state="complete" if output else "empty") if source_name else None
+    if source_name:
+        state = collection_state or ("complete" if output else "empty")
+        source = provenance(source_name, urls=source_urls, state=state)
+    else:
+        source = None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)
 
 
@@ -348,6 +358,8 @@ async def public_source_endpoint(provider: str, resource: str, payload: dict, ra
     capability = f"scrape.{provider}"
     if provider == "facebook":
         action = lambda: facebook(payload, resource)
+    elif provider == "instagram":
+        action = lambda: instagram_collect(resource, payload)
     elif provider == "amazon":
         action = lambda: amazon(payload, resource)
     elif provider == "tiktok" and resource == "search":

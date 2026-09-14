@@ -26,7 +26,16 @@ REGISTRY = (
     Capability("scrape.youtube", "structured", "yt-dlp-youtube-transcript", ("Availability depends on public video metadata and captions.",), "youtube"),
     Capability("scrape.pdf", "structured", "pypdf-public-url", ("Scanned PDFs without a text layer are unsupported.",), "pdf"),
     Capability("scrape.twitter", "best_effort", "public-page-fetch", ("This is not a structured X data collector.",), "social"),
-    Capability("scrape.instagram", "best_effort", "public-page-fetch", ("This is not a structured Instagram data collector.",), "social"),
+    Capability(
+        "scrape.instagram",
+        "structured",
+        "instagram-public-og",
+        (
+            "Profiles and explicit post URLs use public Open Graph metadata only.",
+            "Post grids, comments and engagement counts are not collected without login.",
+        ),
+        "social",
+    ),
     Capability("scrape.facebook", "best_effort", "public-page-fetch-search", ("This is not a structured Meta Ads or group-post collector.",), "social"),
     Capability("scrape.tiktok", "best_effort", "public-page-fetch", ("This is not a structured TikTok data collector.",), "social"),
     Capability("scrape.amazon", "best_effort", "public-page-fetch-search", ("This is not a structured Amazon product or review collector.",), "amazon"),
