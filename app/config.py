@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     smtp_url: str | None = None
     smtp_from: str | None = None
     transcription_model: str = "base"
+    transcription_device: str = "cpu"
+    transcription_compute_type: str | None = None
     uploads_dir: str = "data/uploads"
     stable_diffusion_url: str | None = None
     vm_host_data_dir: str | None = None

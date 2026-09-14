@@ -1,4 +1,4 @@
-"""Private temporary audio uploads and CPU-local Whisper transcription."""
+"""Private temporary audio uploads and local faster-whisper transcription."""
 import asyncio
 from pathlib import Path
 from uuid import uuid4
@@ -32,17 +32,62 @@ def write_upload(upload_id: str, content: bytes) -> None:
     upload_path(upload_id).write_bytes(content)
 
 
-def _transcribe(path: Path) -> dict:
+def _cuda_device_count(failure_message: str) -> int:
+    try:
+        import ctranslate2
+
+        return ctranslate2.get_cuda_device_count()
+    except Exception as error:
+        raise AudioError(failure_message) from error
+
+
+def resolve_whisper_runtime() -> tuple[str, str]:
+    device = settings.transcription_device.strip().lower()
+    if device not in {"cpu", "cuda", "auto"}:
+        raise AudioError("N3XUS_API_TRANSCRIPTION_DEVICE must be cpu, cuda, or auto")
+    if device == "auto":
+        device = (
+            "cuda"
+            if _cuda_device_count("Could not detect a CUDA device for auto transcription") > 0
+            else "cpu"
+        )
+    configured_compute = settings.transcription_compute_type
+    if configured_compute:
+        compute_type = configured_compute.strip()
+    else:
+        compute_type = "float16" if device == "cuda" else "int8"
+    if device == "cuda" and _cuda_device_count("CUDA transcription requested but GPU detection failed") < 1:
+        raise AudioError("CUDA transcription requested but no GPU is available")
+    return device, compute_type
+
+
+def create_whisper_model(model_name: str, device: str, compute_type: str):
     try:
         from faster_whisper import WhisperModel
     except ImportError as error:
         raise AudioError("Install faster-whisper to enable local transcription") from error
+    return WhisperModel(model_name, device=device, compute_type=compute_type)
+
+
+def transcribe_file(path: Path) -> dict:
+    if not path.is_file():
+        raise AudioError("The audio file is missing")
+    return _transcribe(path)
+
+
+def _transcribe(path: Path) -> dict:
+    device, compute_type = resolve_whisper_runtime()
     try:
-        model = WhisperModel(settings.transcription_model, device="cpu", compute_type="int8")
+        model = create_whisper_model(settings.transcription_model, device, compute_type)
         segments, info = model.transcribe(str(path), vad_filter=True)
         rows = [{"text": segment.text.strip(), "start": segment.start, "end": segment.end} for segment in segments]
+    except AudioError:
+        raise
     except Exception as error:
-        raise AudioError("Audio could not be transcribed") from error
+        message = "Audio could not be transcribed"
+        if device == "cuda":
+            message = "CUDA transcription failed; verify drivers, ctranslate2 CUDA build, and compute type"
+        raise AudioError(message) from error
     return {"text": " ".join(row["text"] for row in rows), "language": info.language, "segments": rows}
 
 

@@ -1,0 +1,17 @@
+{
+  "results": [
+    {
+      "id": "jfk-inaugural-excerpt",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1546.5666740001325,
+      "reason": "",
+      "device": "cpu",
+      "computeType": "int8",
+      "missingPhrases": [],
+      "provenance": "Public JFK inaugural excerpt distributed with whisper.cpp (ggml-org/whisper.cpp samples).",
+      "language": "en",
+      "textPreview": "And so my fellow Americans, ask not what your country can do for you, ask what you can do for your country."
+    }
+  ]
+}

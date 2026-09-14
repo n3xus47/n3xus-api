@@ -1,0 +1,14 @@
+{
+  "cases": [
+    {
+      "id": "jfk-inaugural-excerpt",
+      "file": "jfk.wav",
+      "provenance": "Public JFK inaugural excerpt distributed with whisper.cpp (ggml-org/whisper.cpp samples).",
+      "expectedContains": [
+        "fellow americans",
+        "country"
+      ],
+      "language": "en"
+    }
+  ]
+}
