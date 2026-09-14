@@ -7,7 +7,7 @@ Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publiczneg
 - `POST /v1/scrape/website` — ekstrakcja artykułu do Markdown i/lub tekstu, wielostronicowe crawl, limit znaków i fallback Chromium/Playwright dla stron renderowanych JavaScriptem.
 - `POST /v1/search/web` — wyniki SearxNG w zgodnym formacie.
 - `POST /v1/scrape/github/*` — publiczny GitHub API: profile, repozytoria, issues, pull requests, commity, zawartość i wyszukiwanie.
-- `POST /v1/scrape/youtube/*` — transkrypcje, metadane kanałów/wyszukiwania/Shorts oraz miniatury.
+- `POST /v1/scrape/youtube/*` — transkrypcje, miniatury oraz znormalizowane rekordy wideo z wyszukiwania, wielu kanałów i Shorts (publiczna zakładka `/shorts`, z fallbackiem filtrowania `/videos`). Pola m.in. `id`, `url`, `channelHandle`, `isShort`; provenance w `source`.
 - `POST /v1/scrape/pdf` — tekstowa warstwa publicznych PDF-ów.
 - `POST /v1/scrape/{twitter,instagram,tiktok,facebook,amazon}/*`, `/v1/scrape/threads/posts` i `/v1/scrape/google/places` — bezpłatne adaptery wyłącznie do publicznych stron; Google Places korzysta z OpenStreetMap/Nominatim.
 - `POST /v1/research/deep` i `/v1/scrape/extract` — badanie oparte na źródłach oraz ekstrakcja JSON przez lokalny Ollama.

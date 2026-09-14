@@ -53,3 +53,26 @@ async def test_transport_and_invalid_json_failures_continue():
 def test_invalid_fixtures(changes):
     with pytest.raises(ValueError):
         validate_cases([case(**changes)])
+
+
+def test_m1_baseline_corpus_has_minimum_cases_per_capability():
+    import json
+    from collections import Counter
+    from pathlib import Path
+
+    cases = json.loads(Path("evals/m1-baseline.json").read_text())
+    validate_cases(cases)
+    counts = Counter(item["capability"] for item in cases)
+    expected = {
+        "scrape.website",
+        "search.web",
+        "scrape.github",
+        "scrape.youtube",
+        "research.deep",
+        "scrape.google",
+        "scrape.amazon",
+        "scrape.twitter",
+        "seo.read",
+    }
+    assert expected <= counts.keys()
+    assert all(counts[capability] >= 10 for capability in expected)
