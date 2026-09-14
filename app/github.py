@@ -1,11 +1,20 @@
 import base64
 import re
+from collections.abc import Callable
 from dataclasses import dataclass
 from urllib.parse import parse_qs, urlparse
 
 import httpx
 
 from app.config import settings
+
+_GITHUB_HEADERS = {"Accept": "application/vnd.github+json", "User-Agent": settings.user_agent}
+_SEARCH_ENDPOINT = {
+    "repositories": "repositories",
+    "issues": "issues",
+    "pull_requests": "issues",
+    "code": "code",
+}
 
 
 class GitHubError(Exception):
@@ -35,6 +44,39 @@ def page_number(payload: dict) -> int:
     raise GitHubError("pageToken must be a positive integer")
 
 
+def max_per_page(payload: dict) -> int:
+    return min(int(payload.get("maxItems", 30)), 100)
+
+
+def parse_retry_after(header: str | None) -> int | None:
+    if header and header.isdigit():
+        return int(header)
+    return None
+
+
+def paginated_item_count(payload: object) -> int:
+    if isinstance(payload, list):
+        return len(payload)
+    if isinstance(payload, dict):
+        items = payload.get("items", [])
+        return len(items) if isinstance(items, list) else 0
+    return 0
+
+
+def collection_state(result: object) -> str:
+    if not result:
+        return "empty"
+    if isinstance(result, list):
+        return "complete"
+    if isinstance(result, dict):
+        items = result.get("items")
+        if isinstance(items, list):
+            return "complete" if items else "empty"
+        if result.get("item") or result.get("repository"):
+            return "complete"
+    return "complete"
+
+
 def next_page_token(link_header: str | None, page: int, item_count: int, per_page: int) -> str | None:
     if item_count < per_page:
         return None
@@ -57,20 +99,15 @@ async def github_get_page(path: str, params: dict | None = None) -> GitHubPage:
     page = int((params or {}).get("page", 1))
     per_page = int((params or {}).get("per_page", 30))
     try:
-        async with httpx.AsyncClient(
-            timeout=settings.request_timeout_secs,
-            headers={"Accept": "application/vnd.github+json", "User-Agent": settings.user_agent},
-        ) as client:
+        async with httpx.AsyncClient(timeout=settings.request_timeout_secs, headers=_GITHUB_HEADERS) as client:
             response = await client.get(f"https://api.github.com{path}", params=params)
             if response.status_code == 429:
-                retry_after = response.headers.get("Retry-After")
-                parsed = int(retry_after) if retry_after and retry_after.isdigit() else None
-                raise GitHubRateLimitError(parsed)
+                raise GitHubRateLimitError(parse_retry_after(response.headers.get("Retry-After")))
             response.raise_for_status()
             payload = response.json()
-            rows = payload if isinstance(payload, list) else payload.get("items", [])
-            count = len(rows) if isinstance(rows, list) else 0
-            token = next_page_token(response.headers.get("Link"), page, count, per_page)
+            token = next_page_token(
+                response.headers.get("Link"), page, paginated_item_count(payload), per_page
+            )
             return GitHubPage(data=payload, next_page_token=token)
     except GitHubRateLimitError:
         raise
@@ -105,9 +142,9 @@ def compact_user(user: dict) -> dict:
     }
 
 
-def compact_issue(item: dict) -> dict:
-    return {
-        "resourceType": "pull_request" if item.get("pull_request") else "issue",
+def _issue_like_fields(item: dict, resource_type: str, **extra: object) -> dict:
+    fields = {
+        "resourceType": resource_type,
         "number": item.get("number"),
         "title": item.get("title"),
         "state": item.get("state"),
@@ -116,20 +153,17 @@ def compact_issue(item: dict) -> dict:
         "updated_at": item.get("updated_at"),
         "author": (item.get("user") or {}).get("login"),
     }
+    fields.update(extra)
+    return fields
+
+
+def compact_issue(item: dict) -> dict:
+    resource_type = "pull_request" if item.get("pull_request") else "issue"
+    return _issue_like_fields(item, resource_type)
 
 
 def compact_pull(item: dict) -> dict:
-    return {
-        "resourceType": "pull_request",
-        "number": item.get("number"),
-        "title": item.get("title"),
-        "state": item.get("state"),
-        "html_url": item.get("html_url"),
-        "created_at": item.get("created_at"),
-        "updated_at": item.get("updated_at"),
-        "author": (item.get("user") or {}).get("login"),
-        "merged_at": item.get("merged_at"),
-    }
+    return _issue_like_fields(item, "pull_request", merged_at=item.get("merged_at"))
 
 
 def compact_commit(item: dict) -> dict:
@@ -203,9 +237,17 @@ async def repository(name: str) -> dict:
     return {"repository": repo, "languages": languages, "readme": readme}
 
 
+_LIST_RESOURCE: dict[str, tuple[str, Callable[[dict], dict], Callable[[dict], bool]]] = {
+    "issues": ("issue", compact_issue, lambda row: "pull_request" not in row),
+    "pulls": ("pull_request", compact_pull, lambda _row: True),
+    "commits": ("commit", compact_commit, lambda _row: True),
+}
+
+
 async def list_resource(repository: str, resource: str, payload: dict) -> dict:
+    resource_type, compact, include_row = _LIST_RESOURCE[resource]
     page = page_number(payload)
-    per_page = min(int(payload.get("maxItems", 30)), 100)
+    per_page = max_per_page(payload)
     params: dict[str, object] = {"per_page": per_page, "page": page}
     if resource == "issues":
         params["state"] = payload.get("state", "open")
@@ -213,15 +255,7 @@ async def list_resource(repository: str, resource: str, payload: dict) -> dict:
     rows = page_result.data
     if not isinstance(rows, list):
         raise GitHubError("Unexpected GitHub list response")
-    if resource == "issues":
-        items = [compact_issue(row) for row in rows if "pull_request" not in row]
-        resource_type = "issue"
-    elif resource == "pulls":
-        items = [compact_pull(row) for row in rows]
-        resource_type = "pull_request"
-    else:
-        items = [compact_commit(row) for row in rows]
-        resource_type = "commit"
+    items = [compact(row) for row in rows if include_row(row)]
     return {"resourceType": resource_type, "items": items, "nextPageToken": page_result.next_page_token}
 
 
@@ -236,14 +270,22 @@ def search_query(payload: dict, kind: str) -> str:
     return query
 
 
+_SEARCH_COMPACT: dict[str, Callable[[dict], dict]] = {
+    "repositories": compact_repo,
+    "issues": compact_issue,
+    "pull_requests": compact_issue,
+    "code": compact_code,
+}
+
+
 async def search(payload: dict) -> dict:
     kind = payload.get("type", "repositories")
-    query = search_query(payload, kind)
-    endpoint = {"repositories": "repositories", "issues": "issues", "pull_requests": "issues", "code": "code"}.get(kind)
+    endpoint = _SEARCH_ENDPOINT.get(kind)
     if not endpoint:
         raise GitHubError("Unsupported GitHub search type")
+    query = search_query(payload, kind)
     page = page_number(payload)
-    per_page = min(int(payload.get("maxItems", 30)), 100)
+    per_page = max_per_page(payload)
     page_result = await github_get_page(
         f"/search/{endpoint}",
         {"q": query, "per_page": per_page, "page": page},
@@ -252,17 +294,12 @@ async def search(payload: dict) -> dict:
     if not isinstance(raw, dict):
         raise GitHubError("Unexpected GitHub search response")
     items_raw = raw.get("items") or []
-    normalizers = {
-        "repositories": compact_repo,
-        "issues": compact_issue,
-        "pull_requests": compact_issue,
-        "code": compact_code,
-    }
+    compact = _SEARCH_COMPACT[kind]
     return {
         "resourceType": kind,
         "totalCount": raw.get("total_count"),
         "incompleteResults": raw.get("incomplete_results"),
-        "items": [normalizers[kind](item) for item in items_raw],
+        "items": [compact(item) for item in items_raw],
         "nextPageToken": page_result.next_page_token,
     }
 

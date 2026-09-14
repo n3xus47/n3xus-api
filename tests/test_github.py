@@ -6,6 +6,7 @@ import pytest
 
 from app.evaluate import validate_cases
 from app.github import (
+    GitHubPage,
     GitHubRateLimitError,
     compact_issue,
     list_resource,
@@ -67,17 +68,13 @@ def test_normalize_contents_file_and_directory():
 async def test_list_resource_filters_pull_requests_from_issues(monkeypatch):
     async def fake_page(path, params):
         assert path.endswith("/issues")
-        return type(
-            "Page",
-            (),
-            {
-                "data": [
-                    {"number": 1, "title": "Issue", "state": "open"},
-                    {"number": 2, "title": "PR", "state": "open", "pull_request": {"url": "x"}},
-                ],
-                "next_page_token": None,
-            },
-        )()
+        return GitHubPage(
+            data=[
+                {"number": 1, "title": "Issue", "state": "open"},
+                {"number": 2, "title": "PR", "state": "open", "pull_request": {"url": "x"}},
+            ],
+            next_page_token=None,
+        )
 
     monkeypatch.setattr("app.github.github_get_page", fake_page)
     result = await list_resource("octocat/Hello-World", "issues", {"maxItems": 10})
@@ -90,18 +87,14 @@ async def test_search_returns_normalized_items_and_token(monkeypatch):
     async def fake_page(path, params):
         assert path == "/search/repositories"
         assert params["page"] == 2
-        return type(
-            "Page",
-            (),
-            {
-                "data": {
-                    "total_count": 100,
-                    "incomplete_results": False,
-                    "items": [{"full_name": "octocat/Hello-World", "html_url": "https://github.com/octocat/Hello-World"}],
-                },
-                "next_page_token": "3",
+        return GitHubPage(
+            data={
+                "total_count": 100,
+                "incomplete_results": False,
+                "items": [{"full_name": "octocat/Hello-World", "html_url": "https://github.com/octocat/Hello-World"}],
             },
-        )()
+            next_page_token="3",
+        )
 
     monkeypatch.setattr("app.github.github_get_page", fake_page)
     result = await search({"query": "hello", "type": "repositories", "pageToken": "2", "maxItems": 1})

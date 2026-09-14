@@ -13,6 +13,7 @@ from app.email import EmailError, dns_has_token, domain_token, send_email
 from app.github import (
     GitHubError,
     GitHubRateLimitError,
+    collection_state as github_collection_state,
     contents as github_contents,
     list_resource as github_list_resource,
     profile as github_profile,
@@ -118,20 +119,6 @@ async def github_rate_limit_handler(_: Request, error: GitHubRateLimitError) -> 
 @app.exception_handler(GitHubError)
 async def github_error_handler(_: Request, error: GitHubError) -> JSONResponse:
     return failure("/v1/scrape/github", "scrape.github", "scrape_request_failed", str(error), 502)
-
-
-def github_collection_state(result: object) -> str:
-    if not result:
-        return "empty"
-    if isinstance(result, list):
-        return "complete" if result else "empty"
-    if isinstance(result, dict):
-        items = result.get("items")
-        if isinstance(items, list):
-            return "complete" if items else "empty"
-        if result.get("item") or result.get("repository"):
-            return "complete"
-    return "complete"
 
 
 @app.exception_handler(SearchError)
