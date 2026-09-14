@@ -26,6 +26,8 @@ REGISTRY = (
         "searxng+duckduckgo",
         (
             "Fuses self-hosted SearxNG with DuckDuckGo (ddgs), dedupes by URL, and ranks by query relevance.",
+            "Results below the documented relevance floor are dropped; empty output uses collectionState empty.",
+            "Supports site:domain via post-filter on merged URLs (subdomains included).",
             "SearxNG engine quality still depends on local configuration.",
         ),
         "search",

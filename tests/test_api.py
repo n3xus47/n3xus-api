@@ -152,6 +152,40 @@ async def test_search_web_site_operator_filters_merged_hosts(client, monkeypatch
     assert urls == ["https://python.org/about/"]
 
 
+async def test_search_web_drops_low_relevance_junk(client, monkeypatch):
+    from app.models import SearchResult
+
+    async def noisy_searxng(_query, _max):
+        return (
+            [
+                SearchResult(
+                    title="Anthony Gordon footballer",
+                    url="https://www.transfermarkt.com/anthony-gordon/profil/spieler/1",
+                    snippet="Football",
+                ),
+                SearchResult(title="Zara top picks", url="https://www.zara.com/", snippet="Fashion"),
+            ],
+            None,
+        )
+
+    async def empty_ddg(_query, _max):
+        return []
+
+    monkeypatch.setattr("app.search._searxng_search_optional", noisy_searxng)
+    monkeypatch.setattr("app.search._ddg_search_optional", empty_ddg)
+
+    response = await client.post(
+        "/v1/search/web",
+        headers={"Idempotency-Key": f"search-relevance-{uuid4()}"},
+        json={"query": "Gordon Ramsay scrambled eggs recipe"},
+    )
+    body = response.json()
+    assert response.status_code == 200
+    assert body["status"] == "succeeded"
+    assert body["output"]["results"] == []
+    assert body["source"]["collectionState"] == "empty"
+
+
 async def test_github_list_resources_return_normalized_pagination(client, monkeypatch):
     async def fake_list(*_args, **_kwargs):
         return {

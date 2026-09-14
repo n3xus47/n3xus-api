@@ -1,9 +1,12 @@
 import asyncio
+import logging
 import re
 from dataclasses import dataclass
 from urllib.parse import urlparse
 
 import httpx
+
+logger = logging.getLogger(__name__)
 
 from app.config import settings
 from app.models import SearchResult
@@ -15,6 +18,9 @@ class SearchError(Exception):
 
 # Engines that tend to work on self-hosted SearxNG without paid keys (see searxng/settings.yml).
 SEARXNG_ENGINE_CHAIN = ("bing", "startpage")
+
+# Minimum relevance_score for the top merged hit; below this we return no web results (agent-safe).
+SEARCH_RELEVANCE_FLOOR = 2.5
 
 _STOP_WORDS = frozenset(
     {
@@ -232,6 +238,23 @@ def rank_search_results(query: str, results: list[SearchResult]) -> list[SearchR
     return [item for _, item in scored]
 
 
+def apply_relevance_floor(query: str, ranked: list[SearchResult]) -> list[SearchResult]:
+    if not ranked:
+        return []
+    scored = [(relevance_score(query, item), item) for item in ranked]
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    top_score = scored[0][0]
+    if top_score < SEARCH_RELEVANCE_FLOOR:
+        logger.info(
+            "search relevance floor dropped %s result(s); top_score=%s query=%r",
+            len(ranked),
+            top_score,
+            query,
+        )
+        return []
+    return [item for score, item in scored if score >= SEARCH_RELEVANCE_FLOOR]
+
+
 async def search_web(query: str, max_results: int) -> tuple[list[SearchResult], str | None]:
     outcome = await search_web_fused(query, max_results, variant_limit=1)
     return outcome.results, outcome.answer
@@ -309,12 +332,15 @@ async def search_web_fused(
         providers.append("duckduckgo")
 
     merged = merge_search_results(batches, max_results)
-    ranked = apply_site_restriction(query, rank_search_results(relevance_query, merged)[:max_results])
+    ranked = apply_site_restriction(
+        query,
+        apply_relevance_floor(relevance_query, rank_search_results(relevance_query, merged))[:max_results],
+    )
     unique_providers = tuple(dict.fromkeys(providers))
     if ranked:
         return SearchFusionOutcome(ranked, answers[0] if answers else None, unique_providers)
 
-    if site_host and merged:
+    if merged:
         return SearchFusionOutcome([], answers[0] if answers else None, unique_providers)
 
     if settings.search_ddg_enabled:
@@ -323,7 +349,10 @@ async def search_web_fused(
             return SearchFusionOutcome(
                 apply_site_restriction(
                     query,
-                    rank_search_results(relevance_query, ddg_only)[:max_results],
+                    apply_relevance_floor(
+                        relevance_query,
+                        rank_search_results(relevance_query, ddg_only),
+                    )[:max_results],
                 ),
                 None,
                 ("duckduckgo",),

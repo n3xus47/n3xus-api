@@ -2,7 +2,9 @@ import httpx
 
 from app.models import SearchResult
 from app.search import (
+    SEARCH_RELEVANCE_FLOOR,
     SEARXNG_ENGINE_CHAIN,
+    apply_relevance_floor,
     build_search_variants,
     merge_search_results,
     rank_search_results,
@@ -48,6 +50,37 @@ def test_relevance_prefers_matching_phrase_over_partial_token():
     assert ranked[0].url == recipe.url
 
 
+def test_apply_relevance_floor_drops_junk_when_top_score_below_floor():
+    query = "Gordon Ramsay scrambled eggs recipe"
+    football = SearchResult(
+        title="Anthony Gordon footballer",
+        url="https://en.wikipedia.org/wiki/Anthony_Gordon_(footballer)",
+        snippet="English footballer",
+    )
+    zara = SearchResult(title="Top fashion", url="https://www.zara.com/", snippet="Shop")
+    ranked = rank_search_results(query, [zara, football])
+    assert relevance_score(query, ranked[0]) < SEARCH_RELEVANCE_FLOOR
+    assert apply_relevance_floor(query, ranked) == []
+
+
+def test_apply_relevance_floor_keeps_on_topic_results():
+    query = "Gordon Ramsay scrambled eggs recipe"
+    football = SearchResult(
+        title="Anthony Gordon footballer",
+        url="https://en.wikipedia.org/wiki/Anthony_Gordon_(footballer)",
+        snippet="English footballer",
+    )
+    recipe = SearchResult(
+        title="Gordon Ramsay scrambled eggs",
+        url="https://www.bbcgoodfood.com/recipes/gordon-ramsays-scrambled-eggs",
+        snippet="Classic scrambled eggs recipe",
+    )
+    ranked = rank_search_results(query, [football, recipe])
+    kept = apply_relevance_floor(query, ranked)
+    assert len(kept) == 1
+    assert kept[0].url == recipe.url
+
+
 async def test_search_web_fused_falls_back_to_ddg_when_searxng_empty(monkeypatch):
     async def empty_searxng(_query, _max):
         return [], None
@@ -74,7 +107,13 @@ async def test_search_web_fused_ignores_searxng_variant_failures(monkeypatch):
         if calls["n"] == 1:
             raise httpx.ReadError("connection dropped")
         return (
-            [SearchResult(title="Hit", url="https://example.com/asyncio", snippet="asyncio")],
+            [
+                SearchResult(
+                    title="asyncio python tutorial",
+                    url="https://docs.python.org/3/library/asyncio.html",
+                    snippet="asyncio event loop",
+                )
+            ],
             None,
         )
 
