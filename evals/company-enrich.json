@@ -1,0 +1,16 @@
+[
+  {
+    "id": "company-enrich-example",
+    "capability": "company.enrich",
+    "route": "/v1/company/enrich",
+    "payload": {"domain": "example.com"},
+    "required": [
+      "output.domain",
+      "output.matchStatus",
+      "output.profile",
+      "output.profile.website.value",
+      "output.profile.website.provenance.url",
+      "output.sources"
+    ]
+  }
+]

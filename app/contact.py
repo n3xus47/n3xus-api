@@ -5,8 +5,12 @@ No broker data, mailbox probing, or guessed addresses are used.
 import re
 from urllib.parse import urlparse
 
-from app.models import WebsiteScrapeRequest
+from app.models import Page, WebsiteScrapeRequest
 from app.scraper import scrape_website
+
+COMPANY_PATHS = ("", "/about", "/about-us", "/contact", "/contact-us")
+EMAIL_PATTERN = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.I)
+
 
 def normalise_domain(value: str) -> str:
     candidate = value if "://" in value else f"https://{value}"
@@ -16,13 +20,73 @@ def normalise_domain(value: str) -> str:
     return domain.lower()
 
 
+def company_page_urls(hostname: str) -> list[str]:
+    return [f"https://{hostname}" if path == "" else f"https://{hostname}{path}" for path in COMPANY_PATHS]
+
+
+def sourced(value: str | None, url: str, field: str) -> dict | None:
+    if not value or not str(value).strip():
+        return None
+    return {"value": str(value).strip(), "provenance": {"url": url, "field": field}}
+
+
+def published_emails(text: str, hostname: str, page_url: str) -> list[dict]:
+    found: list[dict] = []
+    seen: set[str] = set()
+    for address in EMAIL_PATTERN.findall(text or ""):
+        local, email_domain = address.lower().rsplit("@", 1)
+        if email_domain != hostname or address.lower() in seen:
+            continue
+        seen.add(address.lower())
+        item = sourced(address, page_url, "published_text")
+        if item:
+            found.append(item)
+    return found
+
+
+def build_company_profile(pages: list[Page], hostname: str) -> tuple[dict, list[dict]]:
+    homepage = pages[0]
+    profile: dict[str, object] = {
+        "name": sourced(homepage.title, homepage.url, "document_title"),
+        "description": sourced(homepage.description, homepage.url, "meta_description"),
+        "website": sourced(homepage.url, homepage.url, "canonical_page_url"),
+        "emails": [],
+    }
+    emails: list[dict] = []
+    seen_addresses: set[str] = set()
+    for page in pages:
+        for item in published_emails(page.text or "", hostname, page.url):
+            key = item["value"].lower()
+            if key in seen_addresses:
+                continue
+            seen_addresses.add(key)
+            emails.append(item)
+    profile["emails"] = emails
+    sources = [{"url": page.url, "title": page.title} for page in pages]
+    return profile, sources
+
+
 async def company(domain: str) -> dict:
     hostname = normalise_domain(domain)
-    pages, _ = await scrape_website(WebsiteScrapeRequest(urls=f"https://{hostname}", contentFormat="markdown", maxChars=20_000))
+    pages, _ = await scrape_website(
+        WebsiteScrapeRequest(urls=company_page_urls(hostname), contentFormat="text", maxChars=30_000)
+    )
     if not pages:
-        return {"matchStatus": "not_found", "domain": hostname}
-    page = pages[0]
-    return {"matchStatus": "partial", "domain": hostname, "name": page.title, "description": page.description, "website": page.url}
+        return {"matchStatus": "not_found", "domain": hostname, "profile": {}, "sources": []}
+
+    profile, sources = build_company_profile(pages, hostname)
+    name = profile.get("name")
+    description = profile.get("description")
+    website = profile.get("website")
+    return {
+        "matchStatus": "partial",
+        "domain": hostname,
+        "name": name["value"] if isinstance(name, dict) else None,
+        "description": description["value"] if isinstance(description, dict) else None,
+        "website": website["value"] if isinstance(website, dict) else None,
+        "profile": profile,
+        "sources": sources,
+    }
 
 
 async def find_email(first_name: str, last_name: str, domain: str) -> dict:
@@ -30,7 +94,7 @@ async def find_email(first_name: str, last_name: str, domain: str) -> dict:
     pages, _ = await scrape_website(WebsiteScrapeRequest(urls=[f"https://{hostname}", f"https://{hostname}/contact"], contentFormat="text", maxPages=2, maxChars=50_000))
     expected = {f"{first_name}.{last_name}".lower(), f"{first_name}{last_name}".lower(), f"{first_name[0]}{last_name}".lower()}
     for page in pages:
-        matches = re.findall(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", page.text or "", re.I)
+        matches = EMAIL_PATTERN.findall(page.text or "")
         for address in matches:
             local, found_domain = address.lower().rsplit("@", 1)
             if found_domain == hostname and local.replace("_", ".") in expected:
