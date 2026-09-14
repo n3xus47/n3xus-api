@@ -2,6 +2,7 @@ import httpx
 import pytest
 from uuid import uuid4
 
+from app.github import GitHubRateLimitError
 from app.main import app
 from app.models import Page
 
@@ -106,6 +107,46 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
     assert search.json()["source"]["collectionState"] == "empty"
     assert github.json()["source"]["name"] == "github-public-rest"
     assert places.json()["source"]["name"] == "openstreetmap-nominatim"
+
+
+async def test_github_list_resources_return_normalized_pagination(client, monkeypatch):
+    async def fake_list(*_args, **_kwargs):
+        return {
+            "resourceType": "issue",
+            "items": [{"resourceType": "issue", "number": 1, "title": "Example"}],
+            "nextPageToken": "2",
+        }
+
+    monkeypatch.setattr("app.main.github_list_resource", fake_list)
+    response = await client.post(
+        "/v1/scrape/github/issues",
+        headers={"Idempotency-Key": f"github-issues-{uuid4()}"},
+        json={"repository": "octocat/Hello-World", "maxItems": 1},
+    )
+
+    body = response.json()
+    assert body["status"] == "succeeded"
+    assert body["output"]["resourceType"] == "issue"
+    assert body["output"]["nextPageToken"] == "2"
+    assert body["output"]["items"][0]["resourceType"] == "issue"
+
+
+async def test_github_rate_limit_returns_retryable_error(client, monkeypatch):
+    async def rate_limited(*_args, **_kwargs):
+        raise GitHubRateLimitError(30)
+
+    monkeypatch.setattr("app.main.github_list_resource", rate_limited)
+    response = await client.post(
+        "/v1/scrape/github/commits",
+        headers={"Idempotency-Key": f"github-rate-{uuid4()}"},
+        json={"repository": "octocat/Hello-World", "maxItems": 1},
+    )
+
+    body = response.json()
+    assert response.status_code == 429
+    assert body["error"]["code"] == "github_rate_limited"
+    assert body["error"]["retryable"] is True
+    assert body["error"]["retryAfterSecs"] == 30
 
 
 async def test_capabilities_expose_truthful_support_metadata(client):
