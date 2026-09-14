@@ -6,10 +6,10 @@ from urllib.parse import urlparse
 
 import httpx
 
-logger = logging.getLogger(__name__)
-
 from app.config import settings
 from app.models import SearchResult
+
+logger = logging.getLogger(__name__)
 
 
 class SearchError(Exception):
@@ -138,6 +138,7 @@ _SITE_OPERATOR_RE = re.compile(
     r"\bsite:([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+)\b",
     re.IGNORECASE,
 )
+_RECENCY_VARIANT_RE = re.compile(r"\b(2024|2025|2026|news|today|current)\b", re.IGNORECASE)
 
 
 def _normalize_site_host(host: str) -> str:
@@ -255,12 +256,20 @@ def apply_relevance_floor(query: str, ranked: list[SearchResult]) -> list[Search
     return [item for score, item in scored if score >= SEARCH_RELEVANCE_FLOOR]
 
 
+def finalize_fused_results(
+    original_query: str,
+    relevance_query: str,
+    merged: list[SearchResult],
+    max_results: int,
+) -> list[SearchResult]:
+    ranked = rank_search_results(relevance_query, merged)
+    above_floor = apply_relevance_floor(relevance_query, ranked)
+    return apply_site_restriction(original_query, above_floor[:max_results])
+
+
 async def search_web(query: str, max_results: int) -> tuple[list[SearchResult], str | None]:
     outcome = await search_web_fused(query, max_results, variant_limit=1)
     return outcome.results, outcome.answer
-
-
-_RECENCY_VARIANT_RE = re.compile(r"\b(2024|2025|2026|news|today|current)\b", re.IGNORECASE)
 
 
 def build_search_variants(query: str, *, limit: int = 5) -> list[str]:
@@ -305,15 +314,15 @@ async def search_web_fused(
     variant_limit: int | None = None,
 ) -> SearchFusionOutcome:
     """Run SearxNG variants and DuckDuckGo in parallel, merge, dedupe, and rank by relevance."""
-    engine_query, site_host = parse_site_restriction(query)
+    engine_query, _ = parse_site_restriction(query)
     relevance_query = engine_query or query
     limit = variant_limit if variant_limit is not None else settings.search_variant_limit
-    variants = build_search_variants(engine_query or query, limit=limit)
+    variants = build_search_variants(relevance_query, limit=limit)
     per_variant = max(max_results, 10)
     providers: list[str] = []
 
     searxng_tasks = [_searxng_search_optional(variant, per_variant) for variant in variants]
-    ddg_task = _ddg_search_optional(engine_query or query, max(max_results, 15))
+    ddg_task = _ddg_search_optional(relevance_query, max(max_results, 15))
     gathered = await asyncio.gather(*searxng_tasks, ddg_task, return_exceptions=True)
     searxng_outcomes = gathered[: len(searxng_tasks)]
     ddg_outcome = gathered[len(searxng_tasks)]
@@ -337,28 +346,20 @@ async def search_web_fused(
         providers.append("duckduckgo")
 
     merged = merge_search_results(batches, max_results)
-    ranked = apply_site_restriction(
-        query,
-        apply_relevance_floor(relevance_query, rank_search_results(relevance_query, merged))[:max_results],
-    )
+    ranked = finalize_fused_results(query, relevance_query, merged, max_results)
     unique_providers = tuple(dict.fromkeys(providers))
+    answer = answers[0] if answers else None
     if ranked:
-        return SearchFusionOutcome(ranked, answers[0] if answers else None, unique_providers)
+        return SearchFusionOutcome(ranked, answer, unique_providers)
 
     if merged:
-        return SearchFusionOutcome([], answers[0] if answers else None, unique_providers)
+        return SearchFusionOutcome([], answer, unique_providers)
 
     if settings.search_ddg_enabled:
-        ddg_only = await _ddg_search_optional(engine_query or query, max_results)
+        ddg_only = await _ddg_search_optional(relevance_query, max_results)
         if ddg_only:
             return SearchFusionOutcome(
-                apply_site_restriction(
-                    query,
-                    apply_relevance_floor(
-                        relevance_query,
-                        rank_search_results(relevance_query, ddg_only),
-                    )[:max_results],
-                ),
+                finalize_fused_results(query, relevance_query, ddg_only, max_results),
                 None,
                 ("duckduckgo",),
             )
