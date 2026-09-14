@@ -1,0 +1,1209 @@
+[
+  {
+    "id": "website-01",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://example.com",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-02",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.example.org",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-03",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.iana.org/domains/example",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-04",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://en.wikipedia.org/wiki/HTTP",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-05",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://httpbin.org/html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-06",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-07",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://en.wikipedia.org/wiki/OpenStreetMap",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-08",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://www.gnu.org/licenses/gpl-3.0.en.html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-09",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://datatracker.ietf.org/doc/html/rfc7231",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "website-10",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {
+      "urls": "https://docs.python.org/3/license.html",
+      "contentFormat": "text",
+      "maxChars": 50000
+    },
+    "required": [
+      "output.*.url",
+      "output.*.title",
+      "output.*.text"
+    ]
+  },
+  {
+    "id": "search-01",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Python programming language",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-02",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "OpenStreetMap",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-03",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "GitHub octocat",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-04",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Wikipedia HTTP",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-05",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "GNU GPL license",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-06",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "IETF RFC 7231",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-07",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Example domain",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-08",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Docker containers",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-09",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "FastAPI framework",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "search-10",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "Creative Commons",
+      "maxResults": 5
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ]
+  },
+  {
+    "id": "github-01",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/profile",
+    "payload": {
+      "usernames": [
+        "octocat"
+      ]
+    },
+    "required": [
+      "output.*.login",
+      "output.*.html_url"
+    ]
+  },
+  {
+    "id": "github-02",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/profile",
+    "payload": {
+      "usernames": [
+        "torvalds"
+      ]
+    },
+    "required": [
+      "output.*.login"
+    ]
+  },
+  {
+    "id": "github-03",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/profile",
+    "payload": {
+      "usernames": [
+        "github"
+      ]
+    },
+    "required": [
+      "output.*.login"
+    ]
+  },
+  {
+    "id": "github-04",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/repo",
+    "payload": {
+      "repository": "octocat/Hello-World"
+    },
+    "required": [
+      "output.repository.full_name",
+      "output.repository.html_url"
+    ]
+  },
+  {
+    "id": "github-05",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/repo",
+    "payload": {
+      "repository": "torvalds/linux"
+    },
+    "required": [
+      "output.repository.full_name"
+    ]
+  },
+  {
+    "id": "github-06",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/search",
+    "payload": {
+      "query": "stars:>50000",
+      "type": "repositories",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.full_name"
+    ]
+  },
+  {
+    "id": "github-07",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/search",
+    "payload": {
+      "query": "language:Rust stars:>10000",
+      "type": "repositories",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.full_name"
+    ]
+  },
+  {
+    "id": "github-08",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/issues",
+    "payload": {
+      "repository": "octocat/Hello-World",
+      "maxItems": 3
+    },
+    "required": [
+      "output.*.number",
+      "output.*.title"
+    ]
+  },
+  {
+    "id": "github-09",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/commits",
+    "payload": {
+      "repository": "octocat/Hello-World",
+      "maxItems": 3
+    },
+    "required": [
+      "output.*.sha"
+    ]
+  },
+  {
+    "id": "github-10",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/contents",
+    "payload": {
+      "repository": "octocat/Hello-World",
+      "path": "README"
+    },
+    "required": [
+      "output.name",
+      "output.path"
+    ]
+  },
+  {
+    "id": "youtube-01",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/transcript",
+    "payload": {
+      "url": "https://www.youtube.com/watch?v=8aGhZQkoFbQ",
+      "includeSegments": false,
+      "maxChars": 5000
+    },
+    "required": [
+      "output.text"
+    ]
+  },
+  {
+    "id": "youtube-02",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/transcript",
+    "payload": {
+      "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+      "includeSegments": false,
+      "maxChars": 5000
+    },
+    "required": [
+      "output.text"
+    ]
+  },
+  {
+    "id": "youtube-03",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/thumbnail",
+    "payload": {
+      "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+    },
+    "required": [
+      "output.thumbnail"
+    ]
+  },
+  {
+    "id": "youtube-04",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/search",
+    "payload": {
+      "query": "python tutorial",
+      "maxItems": 3
+    },
+    "required": [
+      "output.*.id",
+      "output.*.title",
+      "output.*.url"
+    ]
+  },
+  {
+    "id": "youtube-05",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/shorts",
+    "payload": {
+      "channels": [
+        "GoogleDevelopers"
+      ],
+      "maxItems": 3
+    },
+    "required": [
+      "output.*.id",
+      "output.*.isShort"
+    ]
+  },
+  {
+    "id": "youtube-06",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/channel",
+    "payload": {
+      "channels": [
+        "GoogleDevelopers",
+        "wikimedia"
+      ],
+      "maxItems": 4
+    },
+    "required": [
+      "output.*.title",
+      "output.*.channelHandle"
+    ]
+  },
+  {
+    "id": "youtube-07",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/search",
+    "payload": {
+      "query": "wikimedia",
+      "maxItems": 3
+    },
+    "required": [
+      "output.*.id"
+    ]
+  },
+  {
+    "id": "youtube-08",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/thumbnail",
+    "payload": {
+      "url": "https://www.youtube.com/watch?v=BaW_jenozKc"
+    },
+    "required": [
+      "output.thumbnail"
+    ]
+  },
+  {
+    "id": "youtube-09",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/search",
+    "payload": {
+      "query": "linux kernel",
+      "maxItems": 2
+    },
+    "required": [
+      "output.*.url"
+    ]
+  },
+  {
+    "id": "youtube-10",
+    "capability": "scrape.youtube",
+    "route": "/v1/scrape/youtube/transcript",
+    "payload": {
+      "url": "https://www.youtube.com/watch?v=aircAruvnKk",
+      "includeSegments": false,
+      "maxChars": 8000
+    },
+    "required": [
+      "output.text"
+    ]
+  },
+  {
+    "id": "research-01",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is HTTP?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-02",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "Who created Linux?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-03",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is OpenStreetMap?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-04",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is the GPL license?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-05",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is Python used for?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-06",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is Docker?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-07",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is FastAPI?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-08",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is GitHub?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-09",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is Creative Commons?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "research-10",
+    "capability": "research.deep",
+    "route": "/v1/research/deep",
+    "payload": {
+      "query": "What is RFC 7231 about?"
+    },
+    "required": [
+      "output.answer",
+      "output.sources"
+    ]
+  },
+  {
+    "id": "places-01",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Eiffel Tower",
+      "maxItems": 3,
+      "location": "Paris"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-02",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Brandenburg Gate",
+      "maxItems": 3,
+      "location": "Berlin"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-03",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Colosseum",
+      "maxItems": 3,
+      "location": "Rome"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-04",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Big Ben",
+      "maxItems": 3,
+      "location": "London"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-05",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Sydney Opera House",
+      "maxItems": 3,
+      "location": "Sydney"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-06",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Central Park",
+      "maxItems": 3,
+      "location": "New York"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-07",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Acropolis",
+      "maxItems": 3,
+      "location": "Athens"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-08",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Sagrada Familia",
+      "maxItems": 3,
+      "location": "Barcelona"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-09",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Charles Bridge",
+      "maxItems": 3,
+      "location": "Prague"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "places-10",
+    "capability": "scrape.google",
+    "route": "/v1/scrape/google/places",
+    "payload": {
+      "search": "Wawel Castle",
+      "maxItems": 3,
+      "location": "Krakow"
+    },
+    "required": [
+      "output.places.*.name",
+      "output.places.*.latitude"
+    ]
+  },
+  {
+    "id": "amazon-01",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "python programming book",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-02",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "linux administration",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-03",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "open source",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-04",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "keyboard mechanical",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-05",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "coffee maker",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-06",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "running shoes",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-07",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "board games",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-08",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "science fiction novel",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-09",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "wireless mouse",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "amazon-10",
+    "capability": "scrape.amazon",
+    "route": "/v1/scrape/amazon/search",
+    "payload": {
+      "query": "cooking cookbook",
+      "maxItems": 5
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-01",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "open source",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-02",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "python",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-03",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "linux",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-04",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "wikipedia",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-05",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "creative commons",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-06",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "docker",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-07",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "fastapi",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-08",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "github",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-09",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "ietf",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "social-10",
+    "capability": "scrape.twitter",
+    "route": "/v1/scrape/twitter/search",
+    "payload": {
+      "query": "gnu",
+      "maxItems": 3
+    },
+    "required": [
+      "output.items.*.url",
+      "output.items.*.title"
+    ]
+  },
+  {
+    "id": "seo-01",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "example domain",
+      "domain": "example.com",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-02",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "python programming",
+      "domain": "python.org",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-03",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "wikipedia",
+      "domain": "wikipedia.org",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-04",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "docker",
+      "domain": "docker.com",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-05",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "github",
+      "domain": "github.com",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-06",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "openstreetmap",
+      "domain": "openstreetmap.org",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-07",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "gnu license",
+      "domain": "gnu.org",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-08",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "fastapi",
+      "domain": "fastapi.tiangolo.com",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-09",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "ietf http",
+      "domain": "ietf.org",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  },
+  {
+    "id": "seo-10",
+    "capability": "seo.read",
+    "route": "/v1/seo/rank",
+    "payload": {
+      "keyword": "creative commons",
+      "domain": "creativecommons.org",
+      "depth": 10
+    },
+    "required": [
+      "output.keyword",
+      "output.domain",
+      "output.results"
+    ]
+  }
+]

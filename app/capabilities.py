@@ -23,7 +23,17 @@ REGISTRY = (
     Capability("search.web", "best_effort", "searxng", ("Results depend on configured SearxNG engines.",), "search"),
     Capability("research.deep", "experimental", "searxng-ollama", ("Evidence coverage and synthesis depend on local search and model quality.",), "research"),
     Capability("scrape.github", "structured", "github-public-rest", ("Unauthenticated GitHub rate limits apply.",), "github"),
-    Capability("scrape.youtube", "structured", "yt-dlp-youtube-transcript", ("Availability depends on public video metadata and captions.",), "youtube"),
+    Capability(
+        "scrape.youtube",
+        "structured",
+        "yt-dlp-youtube-transcript",
+        (
+            "Availability depends on public video metadata and captions.",
+            "Shorts use the public /shorts tab and fall back to filtering the /videos tab when needed.",
+            "Channel and search records expose normalized video fields with yt-dlp provenance.",
+        ),
+        "youtube",
+    ),
     Capability("scrape.pdf", "structured", "pypdf-public-url", ("Scanned PDFs without a text layer are unsupported.",), "pdf"),
     Capability("scrape.twitter", "best_effort", "public-page-fetch", ("This is not a structured X data collector.",), "social"),
     Capability(

@@ -158,6 +158,41 @@ async def test_github_rate_limit_returns_retryable_error(client, monkeypatch):
     assert body["error"]["retryAfterSecs"] == 30
 
 
+async def test_youtube_search_returns_normalized_records(client, monkeypatch):
+    async def fake_search(_query, _max_items):
+        return {
+            "videos": [
+                {
+                    "id": "abc123",
+                    "title": "Demo",
+                    "url": "https://www.youtube.com/watch?v=abc123",
+                    "channelId": "UCxyz",
+                    "channel": "Example",
+                    "channelHandle": "example",
+                    "duration": 120,
+                    "viewCount": 1,
+                    "isShort": False,
+                    "thumbnail": "https://i.ytimg.com/vi/abc123/hqdefault.jpg",
+                }
+            ],
+            "sourceUrls": ["ytsearch3:demo"],
+            "collectionState": "complete",
+            "fallbackUsed": False,
+        }
+
+    monkeypatch.setattr("app.main.youtube_search_videos", fake_search)
+    response = await client.post(
+        "/v1/scrape/youtube/search",
+        headers={"Idempotency-Key": f"youtube-test-{uuid4()}"},
+        json={"query": "demo", "maxItems": 3},
+    )
+    body = response.json()
+    assert body["status"] == "succeeded"
+    assert body["output"][0]["id"] == "abc123"
+    assert body["source"]["name"] == "yt-dlp-youtube-transcript"
+    assert body["source"]["collectionState"] == "complete"
+
+
 async def test_capabilities_expose_truthful_support_metadata(client):
     response = await client.get("/v1/capabilities")
 
