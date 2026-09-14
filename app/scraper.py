@@ -23,6 +23,7 @@ BLOCKED_HTML_MARKERS = (
     "attention required",
     "enable javascript and cookies",
 )
+BROWSER_FALLBACK_MIN_EXTRACTABLE_CHARS = 200
 
 
 class ScrapeError(Exception):
@@ -198,7 +199,7 @@ class PageLoadResult(NamedTuple):
     html: str | None
 
 
-async def _browser_render(url: str) -> tuple[str, str, str | None]:
+async def _browser_render(url: str) -> tuple[str, str, str]:
     from app.browser import render_html
 
     html, final_url = await render_html(url)
@@ -216,20 +217,24 @@ async def _load_page(url: str, content_format: str | None, max_chars: int) -> Pa
         html, final_url = await fetch_html(url)
     except Exception as error:
         reason, detail = _failure_reason(error)
-        if settings.browser_fallback and reason == "blocked":
-            try:
-                html, final_url, render_detail = await _browser_render(url)
-            except Exception as browser_error:
-                browser_reason, browser_detail = _failure_reason(browser_error)
-                return PageLoadResult(
-                    None, url, None, _failure_token(browser_reason, browser_detail), None
-                )
-        else:
+        if not settings.browser_fallback or reason != "blocked":
             return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
+        try:
+            html, final_url, render_detail = await _browser_render(url)
+        except Exception as browser_error:
+            browser_reason, browser_detail = _failure_reason(browser_error)
+            return PageLoadResult(
+                None, url, None, _failure_token(browser_reason, browser_detail), None
+            )
 
     page = extract_page(html, final_url, content_format, max_chars)
     content = page.markdown or page.text or ""
-    if settings.browser_fallback and len(content) < 200 and render_detail is None:
+    needs_browser_for_thin_content = (
+        settings.browser_fallback
+        and render_detail is None
+        and len(content) < BROWSER_FALLBACK_MIN_EXTRACTABLE_CHARS
+    )
+    if needs_browser_for_thin_content:
         try:
             html, final_url, render_detail = await _browser_render(final_url)
             page = extract_page(html, final_url, content_format, max_chars)
