@@ -137,7 +137,7 @@ async def research(query: str, context: str | None) -> dict:
         try:
             fusion = await search_web_fused(search_query, MAX_RESULTS_PER_QUERY)
             results = fusion.results
-        except Exception:
+        except Exception:  # one failed query must not abort the rest of the plan
             results = []
         if results:
             queries_with_results += 1

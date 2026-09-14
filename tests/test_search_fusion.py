@@ -88,4 +88,3 @@ async def test_search_web_fused_ignores_searxng_variant_failures(monkeypatch):
     assert outcome.results
     assert "searxng" in outcome.providers
 
-

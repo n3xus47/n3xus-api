@@ -3,6 +3,7 @@ import json
 import pytest
 
 from app.models import Page, SearchResult
+from app.search import SearchError, SearchFusionOutcome
 from app.research import (
     assess_completeness,
     merge_search_hits,
@@ -105,8 +106,6 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
 
 
 async def test_research_partial_when_one_planned_query_search_fails(monkeypatch):
-    from app.search import SearchError, SearchFusionOutcome
-
     async def fake_plan(_query, _context):
         return ["good query", "bad query"]
 

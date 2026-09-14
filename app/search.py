@@ -218,24 +218,26 @@ async def search_web_fused(
     searxng_tasks = [_searxng_search_optional(variant, per_variant) for variant in variants]
     ddg_task = _ddg_search_optional(query, max(max_results, 15))
     gathered = await asyncio.gather(*searxng_tasks, ddg_task, return_exceptions=True)
+    searxng_outcomes = gathered[: len(searxng_tasks)]
+    ddg_outcome = gathered[len(searxng_tasks)]
 
     batches: list[list[SearchResult]] = []
     answers: list[str] = []
-    for index, item in enumerate(gathered):
-        if isinstance(item, BaseException):
+    for item in searxng_outcomes:
+        if isinstance(item, Exception):
             continue
-        if index < len(searxng_tasks):
-            if not isinstance(item, tuple):
-                continue
-            results, answer = item
-            if results:
-                batches.append(results)
-                providers.append("searxng")
-            if answer and answer not in answers:
-                answers.append(answer)
-        elif isinstance(item, list) and item:
-            batches.append(item)
-            providers.append("duckduckgo")
+        if not isinstance(item, tuple):
+            continue
+        results, answer = item
+        if results:
+            batches.append(results)
+            providers.append("searxng")
+        if answer and answer not in answers:
+            answers.append(answer)
+
+    if isinstance(ddg_outcome, list) and ddg_outcome:
+        batches.append(ddg_outcome)
+        providers.append("duckduckgo")
 
     merged = merge_search_results(batches, max_results)
     ranked = rank_search_results(query, merged)[:max_results]
