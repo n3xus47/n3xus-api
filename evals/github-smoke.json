@@ -1,0 +1,51 @@
+[
+  {
+    "id": "github-profile-01",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/profile",
+    "payload": {
+      "usernames": ["octocat"]
+    },
+    "required": ["output.*.login", "output.*.html_url"]
+  },
+  {
+    "id": "github-issues-01",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/issues",
+    "payload": {
+      "repository": "octocat/Hello-World",
+      "maxItems": 3
+    },
+    "required": [
+      "output.resourceType",
+      "output.items.*.number",
+      "output.items.*.title",
+      "output.items.*.resourceType"
+    ]
+  },
+  {
+    "id": "github-search-01",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/search",
+    "payload": {
+      "query": "stars:>50000",
+      "type": "repositories",
+      "maxItems": 3
+    },
+    "required": [
+      "output.resourceType",
+      "output.items.*.full_name",
+      "output.items.*.resourceType"
+    ]
+  },
+  {
+    "id": "github-contents-01",
+    "capability": "scrape.github",
+    "route": "/v1/scrape/github/contents",
+    "payload": {
+      "repository": "octocat/Hello-World",
+      "path": "README"
+    },
+    "required": ["output.resourceType", "output.item.name", "output.item.path"]
+  }
+]

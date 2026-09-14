@@ -10,7 +10,16 @@ from app.image import ImageError, generate_image
 from app.contact import company as enrich_company, find_email, verify_email
 from app.browser_act import BrowserTaskError, act as browser_act
 from app.email import EmailError, dns_has_token, domain_token, send_email
-from app.github import GitHubError, contents as github_contents, list_resource as github_list_resource, profile as github_profile, repository as github_repository, search as github_search
+from app.github import (
+    GitHubError,
+    GitHubRateLimitError,
+    collection_state as github_collection_state,
+    contents as github_contents,
+    list_resource as github_list_resource,
+    profile as github_profile,
+    repository as github_repository,
+    search as github_search,
+)
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance, strip_collection_state
 from app.pdf import PdfError, extract_pdf
@@ -90,6 +99,24 @@ async def pdf_error_handler(_: Request, error: PdfError) -> JSONResponse:
 @app.exception_handler(YouTubeError)
 async def youtube_error_handler(_: Request, error: YouTubeError) -> JSONResponse:
     return failure("/v1/scrape/youtube", "scrape.youtube", "scrape_request_failed", str(error), 502)
+
+
+@app.exception_handler(GitHubRateLimitError)
+async def github_rate_limit_handler(_: Request, error: GitHubRateLimitError) -> JSONResponse:
+    body = Envelope(
+        route="/v1/scrape/github",
+        capability="scrape.github",
+        status="failed",
+        debitMicrousd=None,
+        output=None,
+        error={
+            "code": "github_rate_limited",
+            "retryable": True,
+            "retryAfterSecs": error.retry_after,
+            "hint": str(error),
+        },
+    ).model_dump(by_alias=True, exclude_none=True)
+    return JSONResponse(status_code=429, content=body)
 
 
 @app.exception_handler(GitHubError)
@@ -176,7 +203,7 @@ async def github_response(route: str, payload: dict, raw: Request, action):
     result = await action()
     return persist(route, raw, envelope(
         route=route, capability="scrape.github", output=result,
-        source=provenance("github-public-rest", state="complete" if result else "empty"),
+        source=provenance("github-public-rest", state=github_collection_state(result)),
     ), False)
 
 
