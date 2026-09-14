@@ -1,6 +1,7 @@
+from uuid import uuid4
+
 import httpx
 import pytest
-from uuid import uuid4
 
 from app.instagram_public import collection_state, parse_instagram_post, parse_instagram_profile
 from app.main import app

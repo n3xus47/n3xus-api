@@ -56,9 +56,11 @@ def collection_state(page_html: str, *, profiles: list[dict], posts: list[dict])
     title = _og_meta(page_html).get("title", "").lower()
     if "log in" in title or title.startswith("login"):
         return "blocked"
-    if profiles or posts:
-        return "complete" if posts else "partial"
-    return "empty"
+    if not profiles and not posts:
+        return "empty"
+    if posts:
+        return "complete"
+    return "partial"
 
 
 def parse_instagram_profile(page_html: str, requested_username: str, profile_url: str) -> dict:
@@ -106,15 +108,49 @@ def parse_instagram_post(page_html: str, post_url: str) -> dict:
     }
 
 
+def _optional_url_list(raw: object) -> list[str]:
+    if isinstance(raw, str):
+        return [raw]
+    if isinstance(raw, list):
+        return [url for url in raw if isinstance(url, str)]
+    return []
+
+
+def _collect_result(
+    *,
+    profiles: list[dict],
+    posts: list[dict],
+    source_urls: list[str],
+    state_html: str,
+) -> dict:
+    return {
+        "profiles": profiles,
+        "posts": posts,
+        "sourceUrls": source_urls,
+        "collectionState": collection_state(state_html, profiles=profiles, posts=posts),
+    }
+
+
 async def _fetch_html(url: str) -> str:
-    pages, _ = await scrape_website(WebsiteScrapeRequest(urls=[url], contentFormat="text", maxPages=1, maxChars=500_000))
+    request = WebsiteScrapeRequest(urls=[url], contentFormat="text", maxPages=1, maxChars=500_000)
+    pages, _ = await scrape_website(request)
     if not pages:
-        async with httpx.AsyncClient(timeout=settings.request_timeout_secs, headers={"User-Agent": settings.user_agent}) as client:
+        async with httpx.AsyncClient(
+            timeout=settings.request_timeout_secs,
+            headers={"User-Agent": settings.user_agent},
+        ) as client:
             response = await client.get(url, follow_redirects=True)
             response.raise_for_status()
             return response.text
     page = pages[0]
     return page.text or page.markdown or ""
+
+
+def _require_usernames(payload: dict) -> list[str]:
+    usernames = payload.get("usernames") or payload.get("handles")
+    if not isinstance(usernames, list) or not usernames or not all(isinstance(name, str) for name in usernames):
+        raise ValueError("usernames must be a non-empty list")
+    return usernames
 
 
 async def instagram_collect(resource: str, payload: dict) -> dict:
@@ -124,42 +160,24 @@ async def instagram_collect(resource: str, payload: dict) -> dict:
             raise ValueError("url is required")
         html = await _fetch_html(url)
         posts = [parse_instagram_post(html, url)]
-        return {
-            "profiles": [],
-            "posts": posts,
-            "sourceUrls": [url],
-            "collectionState": collection_state(html, profiles=[], posts=posts),
-        }
+        return _collect_result(profiles=[], posts=posts, source_urls=[url], state_html=html)
 
-    usernames = payload.get("usernames") or payload.get("handles")
-    urls = payload.get("urls")
-    if isinstance(urls, str):
-        urls = [urls]
-    if not isinstance(urls, list):
-        urls = []
-    if resource in {"profile", "posts"}:
-        if not isinstance(usernames, list) or not usernames or not all(isinstance(name, str) for name in usernames):
-            raise ValueError("usernames must be a non-empty list")
-        profiles = []
-        source_urls = []
-        html = ""
-        for name in usernames:
-            profile_url = f"https://www.instagram.com/{name.lstrip('@')}/"
-            html = await _fetch_html(profile_url)
-            profiles.append(parse_instagram_profile(html, name, profile_url))
-            source_urls.append(profile_url)
-        posts = []
-        for post_url in urls:
-            if not isinstance(post_url, str):
-                continue
-            post_html = await _fetch_html(post_url)
-            posts.append(parse_instagram_post(post_html, post_url))
-            source_urls.append(post_url)
-        return {
-            "profiles": profiles,
-            "posts": posts,
-            "sourceUrls": source_urls,
-            "collectionState": collection_state(html, profiles=profiles, posts=posts),
-        }
+    if resource not in {"profile", "posts"}:
+        raise ValueError("Unsupported Instagram resource")
 
-    raise ValueError("Unsupported Instagram resource")
+    usernames = _require_usernames(payload)
+    post_urls = _optional_url_list(payload.get("urls"))
+    profiles: list[dict] = []
+    source_urls: list[str] = []
+    state_html = ""
+    for name in usernames:
+        profile_url = f"https://www.instagram.com/{name.lstrip('@')}/"
+        state_html = await _fetch_html(profile_url)
+        profiles.append(parse_instagram_profile(state_html, name, profile_url))
+        source_urls.append(profile_url)
+    posts: list[dict] = []
+    for post_url in post_urls:
+        post_html = await _fetch_html(post_url)
+        posts.append(parse_instagram_post(post_html, post_url))
+        source_urls.append(post_url)
+    return _collect_result(profiles=profiles, posts=posts, source_urls=source_urls, state_html=state_html)

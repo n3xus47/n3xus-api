@@ -296,10 +296,10 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "email_not_configured", str(error), 503)
     except RuntimeError as error:
         return failure(route, capability, "request_failed", str(error), 502)
-    collection_state = None
+    adapter_state = None
     source_urls = None
     if isinstance(output, dict):
-        collection_state = output.pop("collectionState", None)
+        adapter_state = output.pop("collectionState", None)
         source_urls = output.pop("sourceUrls", None)
     source_name = {
         "scrape.google": "openstreetmap-nominatim",
@@ -311,7 +311,7 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         "scrape.threads": "public-threads-pages",
     }.get(capability)
     if source_name:
-        state = collection_state or ("complete" if output else "empty")
+        state = adapter_state or ("complete" if output else "empty")
         source = provenance(source_name, urls=source_urls, state=state)
     else:
         source = None
