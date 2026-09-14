@@ -33,7 +33,6 @@ source-specific fields rather than generic page text when evaluating adapters.
 
 The single public example-domain fixture proves the harness path only. The M1
 corpus lives in `evals/m1-corpus.json` (90 lawful public cases, 10 per suite).
-Run `npm run eval -- --fixtures evals/m1-corpus.json --output docs/evals/m1-baseline.md
---timeout 180` and commit the generated `docs/evals/m1-baseline.md` and
+Run `npm run eval -- --fixtures evals/m1-corpus.json --output docs/evals/m1-baseline.md --timeout 180` and commit the generated `docs/evals/m1-baseline.md` and
 `docs/evals/m1-baseline.json` as the reproducible baseline. README support
 documentation remains scoped to issue #3.

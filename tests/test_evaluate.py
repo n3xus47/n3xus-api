@@ -1,4 +1,5 @@
 import json
+from collections import Counter
 from pathlib import Path
 
 import httpx
@@ -7,6 +8,8 @@ import pytest
 from app.capabilities import get_capability
 from app.evaluate import evaluate, render_report, validate_cases
 
+M1_CORPUS_PATH = Path(__file__).resolve().parents[1] / "evals" / "m1-corpus.json"
+M1_CASES_PER_SUITE = 10
 M1_SUITES = ("website", "search", "github", "youtube", "research", "places", "amazon", "social", "seo")
 
 
@@ -62,10 +65,8 @@ def test_invalid_fixtures(changes):
 
 
 def test_m1_corpus_has_ten_public_cases_per_suite():
-    cases = validate_cases(json.loads(Path("evals/m1-corpus.json").read_text()))
-    suites = {name: 0 for name in M1_SUITES}
-    for item in cases:
-        suite = get_capability(item["capability"]).evaluation_suite
-        suites[suite] += 1
-    assert len(cases) == 90
-    assert suites == dict.fromkeys(M1_SUITES, 10)
+    cases = validate_cases(json.loads(M1_CORPUS_PATH.read_text()))
+    by_suite = Counter(get_capability(item["capability"]).evaluation_suite for item in cases)
+    expected = dict.fromkeys(M1_SUITES, M1_CASES_PER_SUITE)
+    assert len(cases) == len(M1_SUITES) * M1_CASES_PER_SUITE
+    assert by_suite == expected
