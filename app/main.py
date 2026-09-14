@@ -14,6 +14,7 @@ from app.github import GitHubError, contents as github_contents, list_resource a
 from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance, strip_collection_state
 from app.pdf import PdfError, extract_pdf
+from app.instagram_public import instagram_collect
 from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
@@ -302,7 +303,7 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         "scrape.open-business": "openstreetmap-nominatim",
         "scrape.amazon": "public-amazon-structured",
         "scrape.twitter": "public-x-pages",
-        "scrape.instagram": "public-instagram-pages",
+        "scrape.instagram": "instagram-public-og",
         "scrape.facebook": "public-facebook-pages",
         "scrape.tiktok": "public-tiktok-pages",
         "scrape.threads": "public-threads-pages",
@@ -356,6 +357,8 @@ async def public_source_endpoint(provider: str, resource: str, payload: dict, ra
     capability = f"scrape.{provider}"
     if provider == "facebook":
         action = lambda: facebook(payload, resource)
+    elif provider == "instagram":
+        action = lambda: instagram_collect(resource, payload)
     elif provider == "amazon":
         action = lambda: amazon(payload, resource)
     elif provider == "tiktok" and resource == "search":

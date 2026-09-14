@@ -1,0 +1,14 @@
+[
+  {
+    "id": "instagram-profile-nasa",
+    "capability": "scrape.instagram",
+    "route": "/v1/scrape/instagram/profile",
+    "payload": {"usernames": ["nasa"]},
+    "required": [
+      "output.profiles.*.username",
+      "output.profiles.*.displayName",
+      "output.profiles.*.profileUrl",
+      "output.profiles.*.followerCount"
+    ]
+  }
+]
