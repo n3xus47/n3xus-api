@@ -11,7 +11,7 @@ Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publiczneg
 - `POST /v1/scrape/pdf` — tekstowa warstwa publicznych PDF-ów.
 - `POST /v1/scrape/{twitter,instagram,tiktok,facebook,amazon}/*`, `/v1/scrape/threads/posts`, `/v1/scrape/open-business/search` oraz alias `/v1/scrape/google/places` — bezpłatne adaptery do publicznych stron. Amazon zwraca znormalizowane listingi/produkty/recenzje z publicznych stron (US/UK/DE); przy blokadzie CAPTCHA — pusty wynik ze stanem `blocked`, bez surowego tekstu strony. Rekordy open-business pochodzą z OpenStreetMap/Nominatim (nie z Google Places), z jawną atrybucją OSM.
 - `POST /v1/research/deep` i `/v1/scrape/extract` — badanie oparte na źródłach oraz ekstrakcja JSON przez lokalny Ollama.
-- `POST /v1/email/*` — lokalne szkice oraz wysyłka przez własny SMTP po ustawieniu `N3XUS_API_SMTP_URL` i utworzeniu tożsamości. Wyszukiwanie kontaktu sprawdza wyłącznie jawnie opublikowane adresy na stronie firmy; nie zgaduje adresów ani nie używa brokerów danych.
+- `POST /v1/email/*` — lokalne szkice oraz wysyłka przez własny SMTP po ustawieniu `N3XUS_API_SMTP_URL` i utworzeniu tożsamości. Wyszukiwanie kontaktu sprawdza wyłącznie jawnie opublikowane adresy na stronie firmy; nie zgaduje adresów ani nie używa brokerów danych. `/v1/email/verify` sprawdza tylko składnię (`checkKind: syntax_only`); dostarczalność wymaga zatwierdzonego adaptera (`docs/email-verification-policy.md`).
 - `POST /v1/seo/*` — lokalny ranking i konkurenci oparte na SearxNG; bezpłatne źródła nie publikują wiarygodnych wolumenów i CPC, więc te pola mają wartość `null`.
 - `POST /v1/browser/act` — lokalny Chromium + Ollama dla ograniczonych zadań na publicznej stronie: odczyt, linki, filtry, sortowanie, paginacja i wyszukiwarki. Blokuje logowanie, zakupy, CAPTCHA oraz formularze.
 - `POST /v1/transcribe/uploads`, `PUT /v1/transcribe/uploads/{uploadId}`, `POST /v1/transcribe` — prywatny upload do 25 MB i lokalny faster-whisper na CPU.
@@ -32,7 +32,7 @@ Każda możliwość ma przypisany poziom w rejestrze zwracanym przez `GET /v1/ca
 | `structured` | Normalizowane rekordy z oczekiwanymi polami; adapter jest źródłowo specyficzny (np. GitHub REST, yt-dlp). |
 | `best_effort` | Publiczny fetch strony lub ograniczone API; wynik może być niepełny lub ogólny — **nie traktuj go jak pełnego rekordu produktu, posta czy miejsca Google**. |
 | `experimental` | Lokalny model lub heurystyka (Ollama, browser act); jakość zależy od konfiguracji. |
-| `unavailable` | Celowo nieobsługiwane lokalnie (np. weryfikacja skrzynki); wywołanie zwraca błąd kontraktu zamiast zgadywać dane. |
+| `unavailable` | Celowo nieobsługiwane lokalnie (np. wzbogacanie osoby po e-mail); wywołanie zwraca błąd kontraktu zamiast zgadywać dane. |
 
 Pole `limitations` i `adapter` w tym samym obiekcie wyjaśniają źródło i znane ograniczenia. Pełna mapa luk względem komercyjnych API: `docs/deepapi-parity-audit.md`.
 

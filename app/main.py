@@ -390,6 +390,10 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
             seo_provenance_name(adapter_id) if isinstance(adapter_id, str) else "seo-policy",
             state=collection_state,
         )
+    elif capability == "email.verify" and isinstance(output, dict):
+        syntax = output.get("syntax") if isinstance(output.get("syntax"), dict) else {}
+        adapter_id = syntax.get("adapterId")
+        source = provenance(adapter_id if isinstance(adapter_id, str) else "email-verification-policy", state=collection_state)
     else:
         source = None
     return persist(route, raw, envelope(route=route, capability=capability, output=output, source=source), False)

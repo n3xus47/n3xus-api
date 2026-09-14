@@ -113,7 +113,16 @@ REGISTRY = (
     ),
     Capability("email.read", "structured", "local-sqlite", ("Only messages sent or drafted through n3xusAPI are stored.",), "email"),
     Capability("email.find", "best_effort", "public-company-pages", ("Only explicitly published addresses are returned; addresses are never guessed.",), "contact"),
-    Capability("email.verify", "unavailable", "syntax-check", ("Mailbox deliverability verification is not implemented.",), "contact"),
+    Capability(
+        "email.verify",
+        "best_effort",
+        "rfc5322-pragmatic-syntax",
+        (
+            "Syntax validation only; responses use checkKind syntax_only and never imply mailbox deliverability.",
+            "Deliverability verification requires an approved adapter; see docs/email-verification-policy.md.",
+        ),
+        "contact",
+    ),
     Capability("email.enrich", "unavailable", "none", ("Person-data enrichment is not implemented.",), "contact"),
     Capability(
         "company.enrich",

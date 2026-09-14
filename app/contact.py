@@ -107,6 +107,6 @@ async def find_email(first_name: str, last_name: str, domain: str) -> dict:
 
 
 def verify_email(email: str) -> dict:
-    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
-        return {"email": email, "verdict": "undeliverable", "score": 0, "reason": "invalid_syntax"}
-    return {"email": email, "verdict": "unknown", "score": 0, "reason": "Local mode does not probe mailboxes"}
+    from app.email_verification import verify_email_address
+
+    return verify_email_address(email)

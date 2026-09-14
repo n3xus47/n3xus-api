@@ -223,9 +223,12 @@ async def test_capabilities_filter_returns_one_capability_with_metadata(client):
     assert response.status_code == 200
     assert response.json()["output"] == {
         "slug": "email.verify",
-        "supportLevel": "unavailable",
-        "adapter": "syntax-check",
-        "limitations": ["Mailbox deliverability verification is not implemented."],
+        "supportLevel": "best_effort",
+        "adapter": "rfc5322-pragmatic-syntax",
+        "limitations": [
+            "Syntax validation only; responses use checkKind syntax_only and never imply mailbox deliverability.",
+            "Deliverability verification requires an approved adapter; see docs/email-verification-policy.md.",
+        ],
         "evaluationSuite": "contact",
     }
 
