@@ -15,6 +15,9 @@ class VmError(Exception):
 
 LOG_CHAR_LIMIT = 524_288
 RUNTIME_TIMEOUT_SECS = 600
+CONTAINER_MEM_LIMIT = "1g"
+CONTAINER_CPU_CORES = 1
+CONTAINER_PIDS_LIMIT = 256
 LOCALHOST_CLIENTS = frozenset({"127.0.0.1", "::1", "localhost", "testclient"})
 
 IMAGES = {
@@ -47,7 +50,8 @@ def _safe_path(value: str) -> Path:
 
 def _prepare_workspace(request_id: str, code: str, language: str, files: list[dict]) -> tuple[Path, list[str], str]:
     if language not in IMAGES:
-        raise VmError("language must be one of bash, python, node, bun, rust, c, or go")
+        supported = ", ".join(IMAGES)
+        raise VmError(f"language must be one of {supported}")
     root = Path(settings.data_dir) / "vm" / request_id
     root.mkdir(parents=True, exist_ok=False)
     image, entrypoint, command = IMAGES[language]
@@ -89,9 +93,9 @@ def _container_run_kwargs(mount_root: Path) -> dict:
         "working_dir": "/workspace",
         "volumes": {str(mount_root.resolve()): {"bind": "/workspace", "mode": "rw"}},
         "network_mode": "bridge",
-        "mem_limit": "1g",
-        "nano_cpus": 1_000_000_000,
-        "pids_limit": 256,
+        "mem_limit": CONTAINER_MEM_LIMIT,
+        "nano_cpus": CONTAINER_CPU_CORES * 1_000_000_000,
+        "pids_limit": CONTAINER_PIDS_LIMIT,
         "cap_drop": ["ALL"],
         "security_opt": ["no-new-privileges:true"],
         "read_only": True,
@@ -99,18 +103,34 @@ def _container_run_kwargs(mount_root: Path) -> dict:
     }
 
 
+def _isolation_metadata() -> dict:
+    return {
+        "network": "bridge",
+        "readOnlyRoot": True,
+        "capDropAll": True,
+        "noNewPrivileges": True,
+        "memLimit": CONTAINER_MEM_LIMIT,
+        "cpuLimit": CONTAINER_CPU_CORES,
+        "pidsLimit": CONTAINER_PIDS_LIMIT,
+    }
+
+
+def _mount_root(workspace: Path) -> Path:
+    if settings.vm_host_data_dir:
+        return Path(settings.vm_host_data_dir) / "vm" / workspace.name
+    return workspace
+
+
 def execute_container(client, root: Path, command: list[str], image: str) -> dict:
-    mount_root = Path(settings.vm_host_data_dir) / "vm" / root.name if settings.vm_host_data_dir else root
-    container = client.containers.run(image, command, **_container_run_kwargs(mount_root))
+    container = client.containers.run(image, command, **_container_run_kwargs(_mount_root(root)))
     execution_state = "complete"
-    exit_code: int | None
+    exit_code: int | None = None
     try:
         try:
             result = container.wait(timeout=RUNTIME_TIMEOUT_SECS)
             exit_code = result.get("StatusCode")
         except (ReadTimeout, Timeout):
             execution_state = "timeout"
-            exit_code = None
             container.kill()
         stdout_raw = container.logs(stdout=True, stderr=False).decode(errors="replace")
         stderr_raw = container.logs(stdout=False, stderr=True).decode(errors="replace")
@@ -142,15 +162,7 @@ def _run(request_id: str, code: str, language: str, files: list[dict], output_fi
     except Exception as error:
         raise VmError("Docker VM execution failed") from error
     result["files"] = collect_output_files(root, request_id, output_files)
-    result["isolation"] = {
-        "network": "bridge",
-        "readOnlyRoot": True,
-        "capDropAll": True,
-        "noNewPrivileges": True,
-        "memLimit": "1g",
-        "cpuLimit": 1,
-        "pidsLimit": 256,
-    }
+    result["isolation"] = _isolation_metadata()
     return result
 
 
