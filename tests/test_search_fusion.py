@@ -24,6 +24,16 @@ def test_build_search_variants_deduplicates_and_caps():
     assert len(variants) <= 5
 
 
+def test_build_search_variants_omits_latest_for_chef_queries():
+    variants = build_search_variants("Gordon Ramsay carbonara recipe", limit=5)
+    assert all(not variant.lower().startswith("latest ") for variant in variants)
+
+
+def test_build_search_variants_includes_latest_when_query_signals_recency():
+    variants = build_search_variants("AI news 2026", limit=5)
+    assert "latest AI news 2026" in variants
+
+
 def test_merge_search_results_dedupes_by_url():
     a = SearchResult(title="A", url="https://a.example/1", snippet="s1")
     b = SearchResult(title="B", url="https://b.example/2", snippet=None)

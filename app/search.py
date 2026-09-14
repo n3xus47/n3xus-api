@@ -260,19 +260,24 @@ async def search_web(query: str, max_results: int) -> tuple[list[SearchResult], 
     return outcome.results, outcome.answer
 
 
+_RECENCY_VARIANT_RE = re.compile(r"\b(2024|2025|2026|news|today|current)\b", re.IGNORECASE)
+
+
 def build_search_variants(query: str, *, limit: int = 5) -> list[str]:
     """Diverse query variants (DeepAPI-style multi-search) for better recall."""
     base = " ".join(query.split())
     if not base:
         return [query]
-    variants: list[str] = []
-    for candidate in (
+    candidates = [
         base,
         f"{base} official site",
         f"{base} documentation",
-        f"latest {base}",
-        f"{base} explained",
-    ):
+    ]
+    if _RECENCY_VARIANT_RE.search(base):
+        candidates.append(f"latest {base}")
+    candidates.append(f"{base} explained")
+    variants: list[str] = []
+    for candidate in candidates:
         if candidate not in variants:
             variants.append(candidate)
         if len(variants) >= limit:
