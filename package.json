@@ -5,8 +5,8 @@
   "description": "Local Sandcastle orchestration for n3xusAPI development.",
   "type": "module",
   "scripts": {
-    "test": ".venv/bin/pytest -q",
-    "typecheck": ".venv/bin/python -m compileall -q app",
+    "test": "PYTHONPATH=. .venv/bin/pytest -q",
+    "typecheck": "PYTHONPATH=. .venv/bin/python -m compileall -q app",
     "sandcastle": "npx tsx .sandcastle/main.mts",
     "eval": ".venv/bin/python -m app.evaluate",
     "eval:transcribe": ".venv/bin/python -m app.transcribe_benchmark"

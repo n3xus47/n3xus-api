@@ -47,7 +47,7 @@ from app.youtube import (
     transcript as youtube_transcript,
 )
 from app.transcribe import AudioError, create_upload, transcribe, write_upload
-from app.vm import VmError, output_file as vm_output_file, run as vm_run
+from app.vm import VmError, is_localhost_client, output_file as vm_output_file, run as vm_run
 
 app = FastAPI(title="n3xusAPI", version="0.2.0", description="Local real-world tools API")
 
@@ -463,6 +463,15 @@ async def vm_run_endpoint(payload: dict, raw: Request):
         return replay
     if payload.get("dryRun"):
         return envelope(route=raw.url.path, capability="vm.run", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
+    client_host = raw.client.host if raw.client else None
+    if not is_localhost_client(client_host):
+        return failure(
+            raw.url.path,
+            "vm.run",
+            "vm_localhost_only",
+            "VM execution accepts requests only from localhost clients.",
+            403,
+        )
     files, output_files = payload.get("files", []), payload.get("outputFiles", [])
     if not isinstance(files, list) or not isinstance(output_files, list) or not all(isinstance(item, dict) for item in files) or not all(isinstance(item, str) for item in output_files):
         return failure(raw.url.path, "vm.run", "invalid_request", "files and outputFiles must be arrays.", 400)
