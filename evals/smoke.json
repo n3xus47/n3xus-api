@@ -1,0 +1,9 @@
+[
+  {
+    "id": "website-example",
+    "capability": "scrape.website",
+    "route": "/v1/scrape/website",
+    "payload": {"urls": "https://example.com", "contentFormat": "text"},
+    "required": ["output.*.url", "output.*.title", "output.*.text"]
+  }
+]
