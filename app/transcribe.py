@@ -1,4 +1,4 @@
-"""Private temporary audio uploads and CPU-local Whisper transcription."""
+"""Private temporary audio uploads and local faster-whisper transcription."""
 import asyncio
 from pathlib import Path
 from uuid import uuid4
@@ -32,32 +32,32 @@ def write_upload(upload_id: str, content: bytes) -> None:
     upload_path(upload_id).write_bytes(content)
 
 
+def _cuda_device_count(failure_message: str) -> int:
+    try:
+        import ctranslate2
+
+        return ctranslate2.get_cuda_device_count()
+    except Exception as error:
+        raise AudioError(failure_message) from error
+
+
 def resolve_whisper_runtime() -> tuple[str, str]:
     device = settings.transcription_device.strip().lower()
     if device not in {"cpu", "cuda", "auto"}:
         raise AudioError("N3XUS_API_TRANSCRIPTION_DEVICE must be cpu, cuda, or auto")
     if device == "auto":
-        try:
-            import ctranslate2
-
-            device = "cuda" if ctranslate2.get_cuda_device_count() > 0 else "cpu"
-        except Exception as error:
-            raise AudioError("Could not detect a CUDA device for auto transcription") from error
-    compute_type = settings.transcription_compute_type
-    if compute_type:
-        compute_type = compute_type.strip()
+        device = (
+            "cuda"
+            if _cuda_device_count("Could not detect a CUDA device for auto transcription") > 0
+            else "cpu"
+        )
+    configured_compute = settings.transcription_compute_type
+    if configured_compute:
+        compute_type = configured_compute.strip()
     else:
         compute_type = "float16" if device == "cuda" else "int8"
-    if device == "cuda":
-        try:
-            import ctranslate2
-
-            if ctranslate2.get_cuda_device_count() < 1:
-                raise AudioError("CUDA transcription requested but no GPU is available")
-        except AudioError:
-            raise
-        except Exception as error:
-            raise AudioError("CUDA transcription requested but GPU detection failed") from error
+    if device == "cuda" and _cuda_device_count("CUDA transcription requested but GPU detection failed") < 1:
+        raise AudioError("CUDA transcription requested but no GPU is available")
     return device, compute_type
 
 

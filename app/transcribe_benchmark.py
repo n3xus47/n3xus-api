@@ -8,7 +8,7 @@ from time import perf_counter
 from app.transcribe import AudioError, resolve_whisper_runtime, transcribe_file
 
 
-def load_benchmark(raw):
+def load_benchmark(raw: list) -> list[dict]:
     if not isinstance(raw, list) or not raw:
         raise ValueError("Benchmark cases must be a non-empty JSON array")
     cases = []
@@ -29,7 +29,7 @@ def load_benchmark(raw):
     return cases
 
 
-def resolve_case_paths(cases, root: Path):
+def resolve_case_paths(cases: list[dict], root: Path) -> list[dict]:
     resolved = []
     for case in cases:
         path = Path(case["file"])
@@ -49,7 +49,7 @@ def phrase_coverage(text: str, phrases: list[str]) -> tuple[float, list[str]]:
     return (len(phrases) - len(missing)) / len(phrases), missing
 
 
-def run_benchmark(cases):
+def run_benchmark(cases: list[dict]) -> list[dict]:
     device, compute_type = resolve_whisper_runtime()
     results = []
     for case in cases:
@@ -103,8 +103,11 @@ def render_report(results):
         f"{sum(r['coverage'] for r in results) / n:.1%} | "
         f"{sum(r['latencyMs'] for r in results) / n:.1f} | {device} |"
     )
-    lines += ["", "| Case | Success | Phrase coverage | Latency (ms) | Failure reason | Missing phrases |",
-              "| --- | --- | ---: | ---: | --- | --- |"]
+    lines += [
+        "",
+        "| Case | Success | Phrase coverage | Latency (ms) | Failure reason | Missing phrases |",
+        "| --- | --- | ---: | ---: | --- | --- |",
+    ]
     for result in results:
         missing = ", ".join(result["missingPhrases"]) or "—"
         lines.append(
