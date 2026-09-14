@@ -25,6 +25,14 @@ LIBRARY_FIELDS = (
     "impressions",
     "demographic_distribution",
 )
+TRANSPARENCY_KEYS = (
+    "eu_total_reach",
+    "beneficiary_payers",
+    "bylines",
+    "spend",
+    "impressions",
+    "demographic_distribution",
+)
 
 
 class MetaAdsError(Exception):
@@ -44,11 +52,8 @@ def normalize_ad(row: dict) -> dict:
         bodies = [bodies]
     elif not isinstance(bodies, list):
         bodies = []
-    transparency = {
-        key: row[key]
-        for key in ("eu_total_reach", "beneficiary_payers", "bylines", "spend", "impressions", "demographic_distribution")
-        if row.get(key) is not None
-    }
+    platforms = row.get("publisher_platforms")
+    transparency = {key: row[key] for key in TRANSPARENCY_KEYS if row.get(key) is not None}
     return {
         "id": ad_id,
         "libraryUrl": f"https://www.facebook.com/ads/library/?id={ad_id}" if isinstance(ad_id, str) else None,
@@ -65,7 +70,7 @@ def normalize_ad(row: dict) -> dict:
             "deliveryStart": row.get("ad_delivery_start_time"),
             "deliveryStop": row.get("ad_delivery_stop_time"),
         },
-        "platforms": row.get("publisher_platforms") if isinstance(row.get("publisher_platforms"), list) else [],
+        "platforms": platforms if isinstance(platforms, list) else [],
         "page": {"id": row.get("page_id"), "name": row.get("page_name")},
         "transparency": transparency,
     }
@@ -78,6 +83,33 @@ def _countries(payload: dict) -> list[str]:
     if isinstance(raw, list) and raw and all(isinstance(item, str) for item in raw):
         return [item.upper() for item in raw]
     raise ValueError("countries must be a country code or non-empty list of codes")
+
+
+def provenance_library_urls(output: dict) -> list[str]:
+    ads = output.get("ads")
+    if not isinstance(ads, list):
+        return []
+    urls: list[str] = []
+    for ad in ads:
+        if not isinstance(ad, dict):
+            continue
+        library_url = ad.get("libraryUrl")
+        if isinstance(library_url, str):
+            urls.append(library_url)
+    return urls
+
+
+def _next_page_token(body: object) -> str | None:
+    if not isinstance(body, dict):
+        return None
+    paging = body.get("paging")
+    if not isinstance(paging, dict):
+        return None
+    cursors = paging.get("cursors")
+    if not isinstance(cursors, dict):
+        return None
+    after = cursors.get("after")
+    return after if isinstance(after, str) and after else None
 
 
 async def search_ads(payload: dict) -> dict:
@@ -110,10 +142,7 @@ async def search_ads(payload: dict) -> dict:
     rows = body.get("data") if isinstance(body, dict) else None
     if not isinstance(rows, list):
         rows = []
-    paging = body.get("paging") if isinstance(body, dict) else {}
-    cursors = paging.get("cursors") if isinstance(paging, dict) else {}
-    next_token = cursors.get("after") if isinstance(cursors, dict) else None
     return {
         "ads": [normalize_ad(row) for row in rows if isinstance(row, dict)],
-        "nextPageToken": next_token if isinstance(next_token, str) and next_token else None,
+        "nextPageToken": _next_page_token(body),
     }
