@@ -217,11 +217,13 @@ async def search_web_fused(
 
     searxng_tasks = [_searxng_search_optional(variant, per_variant) for variant in variants]
     ddg_task = _ddg_search_optional(query, max(max_results, 15))
-    gathered = await asyncio.gather(*searxng_tasks, ddg_task)
+    gathered = await asyncio.gather(*searxng_tasks, ddg_task, return_exceptions=True)
 
     batches: list[list[SearchResult]] = []
     answers: list[str] = []
     for index, item in enumerate(gathered):
+        if isinstance(item, BaseException):
+            continue
         if index < len(searxng_tasks):
             if not isinstance(item, tuple):
                 continue

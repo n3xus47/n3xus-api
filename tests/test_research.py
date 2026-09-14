@@ -102,3 +102,39 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
     assert output["evidence"][0]["index"] == 1
     assert output["evidence"][0]["searchQueries"]
     assert output["sources"][0]["url"].startswith("https://")
+
+
+async def test_research_partial_when_one_planned_query_search_fails(monkeypatch):
+    from app.search import SearchError, SearchFusionOutcome
+
+    async def fake_plan(_query, _context):
+        return ["good query", "bad query"]
+
+    async def fake_search(query, _max):
+        if query == "bad query":
+            raise SearchError("Web search is unavailable (no results from configured providers)")
+        return SearchFusionOutcome(
+            [SearchResult(title="A", url="https://a.example/page", snippet="sa")],
+            None,
+            ("duckduckgo",),
+        )
+
+    async def fake_scrape(_request):
+        return (
+            [Page(url="https://a.example/page", markdown="# A", title="A")],
+            [{"url": "https://a.example/page", "status": "returned"}],
+            None,
+        )
+
+    async def fake_generate(_prompt, json_mode=False):
+        return "Partial answer from one source [1]."
+
+    monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
+    monkeypatch.setattr("app.research.search_web_fused", fake_search)
+    monkeypatch.setattr("app.research.scrape_website", fake_scrape)
+    monkeypatch.setattr("app.research.generate", fake_generate)
+
+    output = await research("What is asyncio?", None)
+    assert output["completeness"] == "partial"
+    assert len(output["evidence"]) == 1
+    assert output["searchPlan"] == ["good query", "bad query"]

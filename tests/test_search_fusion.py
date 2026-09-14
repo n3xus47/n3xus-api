@@ -1,3 +1,5 @@
+import httpx
+
 from app.models import SearchResult
 from app.search import (
     SEARXNG_ENGINE_CHAIN,
@@ -5,6 +7,7 @@ from app.search import (
     merge_search_results,
     rank_search_results,
     relevance_score,
+    search_web_fused,
 )
 
 
@@ -43,3 +46,46 @@ def test_relevance_prefers_matching_phrase_over_partial_token():
     assert relevance_score(query, recipe) > relevance_score(query, football)
     ranked = rank_search_results(query, [football, recipe])
     assert ranked[0].url == recipe.url
+
+
+async def test_search_web_fused_falls_back_to_ddg_when_searxng_empty(monkeypatch):
+    async def empty_searxng(_query, _max):
+        return [], None
+
+    async def ddg_results(query, max_results):
+        return [
+            SearchResult(title="Asyncio docs", url="https://docs.python.org/3/library/asyncio.html", snippet=query)
+        ][:max_results]
+
+    monkeypatch.setattr("app.search._searxng_search_optional", empty_searxng)
+    monkeypatch.setattr("app.search._ddg_search_optional", ddg_results)
+
+    outcome = await search_web_fused("python asyncio tutorial", 5, variant_limit=2)
+    assert outcome.results
+    assert "duckduckgo" in outcome.providers
+    assert outcome.results[0].url.startswith("https://docs.python.org")
+
+
+async def test_search_web_fused_ignores_searxng_variant_failures(monkeypatch):
+    calls = {"n": 0}
+
+    async def flaky_searxng(_query, _max):
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise httpx.ReadError("connection dropped")
+        return (
+            [SearchResult(title="Hit", url="https://example.com/asyncio", snippet="asyncio")],
+            None,
+        )
+
+    async def empty_ddg(_query, _max):
+        return []
+
+    monkeypatch.setattr("app.search._searxng_search_optional", flaky_searxng)
+    monkeypatch.setattr("app.search._ddg_search_optional", empty_ddg)
+
+    outcome = await search_web_fused("asyncio python", 5, variant_limit=2)
+    assert outcome.results
+    assert "searxng" in outcome.providers
+
+

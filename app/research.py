@@ -4,7 +4,7 @@ from urllib.parse import urlparse
 from app.llm import LlmError, generate
 from app.models import Page, SearchResult, WebsiteScrapeRequest
 from app.scraper import scrape_website
-from app.search import SearchError, build_search_variants, search_web_fused
+from app.search import build_search_variants, search_web_fused
 
 MAX_EVIDENCE_PAGES = 6
 MAX_RESULTS_PER_QUERY = 5
@@ -137,7 +137,7 @@ async def research(query: str, context: str | None) -> dict:
         try:
             fusion = await search_web_fused(search_query, MAX_RESULTS_PER_QUERY)
             results = fusion.results
-        except SearchError:
+        except Exception:
             results = []
         if results:
             queries_with_results += 1
