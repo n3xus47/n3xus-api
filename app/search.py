@@ -28,8 +28,14 @@ _STOP_WORDS = frozenset(
         "in",
         "on",
         "with",
+        "what",
+        "how",
+        "why",
+        "when",
+        "who",
         "site",
         "latest",
+        "top",
         "official",
         "explained",
         "documentation",
@@ -139,21 +145,28 @@ def relevance_score(query: str, result: SearchResult) -> float:
     hay = f"{title} {snippet} {url}"
     score = 0.0
     for token in tokens:
-        if token not in hay:
+        token_forms = {token}
+        if len(token) > 3 and token.endswith("s"):
+            token_forms.add(token[:-1])
+        if not any(form in hay for form in token_forms):
             continue
         score += 1.0
-        if token in title:
+        if any(form in title for form in token_forms):
             score += 2.0
-        if token in url:
+        if any(form in url for form in token_forms):
             score += 1.5
-        if token in snippet:
+        if any(form in snippet for form in token_forms):
             score += 0.5
     for index in range(len(tokens) - 1):
         phrase = f"{tokens[index]} {tokens[index + 1]}"
         if phrase in hay:
             score += 4.0
-    matched = sum(1 for token in tokens if token in hay)
-    if matched < max(2, len(tokens) // 2):
+    matched = sum(
+        1
+        for token in tokens
+        if token in hay or (len(token) > 3 and token.endswith("s") and token[:-1] in hay)
+    )
+    if len(tokens) >= 2 and matched < max(2, len(tokens) // 2):
         score *= 0.35
     return score
 

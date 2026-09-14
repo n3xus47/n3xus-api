@@ -4,7 +4,9 @@ from urllib.parse import urlparse
 from app.llm import LlmError, generate
 from app.models import Page, SearchResult, WebsiteScrapeRequest
 from app.scraper import scrape_website
-from app.search import build_search_variants, search_web_fused
+from app.search import build_search_variants, relevance_score, search_web_fused
+
+MIN_RESEARCH_HIT_RELEVANCE = 3.0
 
 MAX_EVIDENCE_PAGES = 6
 MAX_RESULTS_PER_QUERY = 5
@@ -33,6 +35,22 @@ Context: {context or ""}"""
 def _registrable_domain(url: str) -> str:
     host = (urlparse(url).hostname or "").lower()
     return host[4:] if host.startswith("www.") else host
+
+
+def _hit_relevance_score(query: str, hit: dict) -> float:
+    result = SearchResult(
+        title=hit.get("title") or hit["url"],
+        url=hit["url"],
+        snippet=hit.get("snippet"),
+    )
+    queries = [query, *(hit.get("searchQueries") or [])]
+    return max(relevance_score(item, result) for item in queries)
+
+
+def filter_relevant_hits(query: str, hits: list[dict], *, min_score: float = MIN_RESEARCH_HIT_RELEVANCE) -> list[dict]:
+    if not hits:
+        return []
+    return [hit for hit in hits if _hit_relevance_score(query, hit) >= min_score]
 
 
 def merge_search_hits(planned_queries: list[str], batches: list[tuple[str, list[SearchResult]]]) -> list[dict]:
@@ -144,6 +162,7 @@ async def research(query: str, context: str | None) -> dict:
         batches.append((search_query, results))
 
     hits = merge_search_hits(search_plan, batches)
+    hits = filter_relevant_hits(query, hits)
     selected_urls = pick_source_urls(hits)
     pages: list[Page] = []
     outcomes: list[dict[str, str]] | None = None

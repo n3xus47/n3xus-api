@@ -6,6 +6,7 @@ from app.models import Page, SearchResult
 from app.search import SearchError, SearchFusionOutcome
 from app.research import (
     assess_completeness,
+    filter_relevant_hits,
     merge_search_hits,
     pick_source_urls,
     plan_search_queries,
@@ -21,6 +22,35 @@ async def test_plan_search_queries_returns_multiple_distinct_queries(monkeypatch
     plan = await plan_search_queries("What is asyncio?", None)
     assert len(plan) == 3
     assert all("asyncio" in item.lower() for item in plan)
+
+
+def test_filter_relevant_hits_drops_off_topic_pl_noise_for_chef_query():
+    query = "top 10 celebrity chefs"
+    hits = [
+        {
+            "url": "https://www.gordonramsay.com/recipes",
+            "title": "Gordon Ramsay recipes",
+            "snippet": "Celebrity chef recipes and cooking tips",
+            "searchQueries": ["top 10 celebrity chefs"],
+        },
+        {
+            "url": "https://sklep.example.pl/zara-top",
+            "title": "Zara top damski",
+            "snippet": "Modna odzież online",
+            "searchQueries": ["top 10 celebrity chefs"],
+        },
+        {
+            "url": "https://transfermarkt.example/gordon",
+            "title": "Gordon footballer profile",
+            "snippet": "Piłkarz Gordon statystyki",
+            "searchQueries": ["top 10 celebrity chefs"],
+        },
+    ]
+    kept = filter_relevant_hits(query, hits)
+    urls = {item["url"] for item in kept}
+    assert "https://www.gordonramsay.com/recipes" in urls
+    assert "https://sklep.example.pl/zara-top" not in urls
+    assert "https://transfermarkt.example/gordon" not in urls
 
 
 def test_merge_search_hits_dedupes_urls_and_keeps_query_provenance():
@@ -70,19 +100,23 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
     async def fake_search(query, _max):
         if query == "q1":
             return SearchFusionOutcome(
-                [SearchResult(title="A", url="https://a.example/page", snippet="sa")], None, ("searxng",)
+                [SearchResult(title="Python asyncio guide", url="https://a.example/asyncio", snippet="asyncio concurrency")],
+                None,
+                ("searxng",),
             )
         return SearchFusionOutcome(
-            [SearchResult(title="B", url="https://b.example/page", snippet="sb")], None, ("searxng",)
+            [SearchResult(title="Asyncio docs", url="https://b.example/asyncio", snippet="asyncio event loop")],
+            None,
+            ("searxng",),
         )
 
     async def fake_scrape(_request):
         return [
-            Page(url="https://a.example/page", markdown="# A", title="A"),
-            Page(url="https://b.example/page", markdown="# B", title="B"),
+            Page(url="https://a.example/asyncio", markdown="# Asyncio", title="Asyncio"),
+            Page(url="https://b.example/asyncio", markdown="# Asyncio", title="Asyncio"),
         ], [
-            {"url": "https://a.example/page", "status": "returned"},
-            {"url": "https://b.example/page", "status": "returned"},
+            {"url": "https://a.example/asyncio", "status": "returned"},
+            {"url": "https://b.example/asyncio", "status": "returned"},
         ], None
 
     async def fake_generate(prompt, json_mode=False):
@@ -113,15 +147,15 @@ async def test_research_partial_when_one_planned_query_search_fails(monkeypatch)
         if query == "bad query":
             raise SearchError("Web search is unavailable (no results from configured providers)")
         return SearchFusionOutcome(
-            [SearchResult(title="A", url="https://a.example/page", snippet="sa")],
+            [SearchResult(title="Python asyncio", url="https://a.example/asyncio", snippet="asyncio tutorial")],
             None,
             ("duckduckgo",),
         )
 
     async def fake_scrape(_request):
         return (
-            [Page(url="https://a.example/page", markdown="# A", title="A")],
-            [{"url": "https://a.example/page", "status": "returned"}],
+            [Page(url="https://a.example/asyncio", markdown="# Asyncio", title="Asyncio")],
+            [{"url": "https://a.example/asyncio", "status": "returned"}],
             None,
         )
 
@@ -137,3 +171,47 @@ async def test_research_partial_when_one_planned_query_search_fails(monkeypatch)
     assert output["completeness"] == "partial"
     assert len(output["evidence"]) == 1
     assert output["searchPlan"] == ["good query", "bad query"]
+
+
+async def test_research_skips_off_topic_hits_before_scrape(monkeypatch):
+    async def fake_plan(_query, _context):
+        return ["top 10 celebrity chefs"]
+
+    async def fake_search(_query, _max):
+        return SearchFusionOutcome(
+            [
+                SearchResult(title="Zara top", url="https://shop.example/zara-top", snippet="Fashion tops"),
+                SearchResult(
+                    title="Gordon Ramsay official",
+                    url="https://www.gordonramsay.com/chefs",
+                    snippet="Celebrity chefs and restaurants",
+                ),
+            ],
+            None,
+            ("searxng",),
+        )
+
+    scraped_urls: list[str] = []
+
+    async def fake_scrape(request):
+        scraped_urls.extend(request.urls)
+        return (
+            [Page(url="https://www.gordonramsay.com/chefs", markdown="# Chefs", title="Chefs")],
+            [{"url": "https://www.gordonramsay.com/chefs", "status": "returned"}],
+            None,
+        )
+
+    async def fake_generate(_prompt, json_mode=False):
+        assert "gordonramsay.com" in _prompt
+        assert "zara-top" not in _prompt.lower()
+        return "Several celebrity chefs include Gordon Ramsay [1]."
+
+    monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
+    monkeypatch.setattr("app.research.search_web_fused", fake_search)
+    monkeypatch.setattr("app.research.scrape_website", fake_scrape)
+    monkeypatch.setattr("app.research.generate", fake_generate)
+
+    output = await research("top 10 celebrity chefs", None)
+    assert scraped_urls == ["https://www.gordonramsay.com/chefs"]
+    assert output["completeness"] == "partial"
+    assert len(output["evidence"]) == 1
