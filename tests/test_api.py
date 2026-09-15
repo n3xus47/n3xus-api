@@ -45,16 +45,37 @@ async def test_website_uses_compatible_envelope(client, monkeypatch):
     assert body["source"]["collectionState"] == "complete"
 
 
-async def test_website_blocked_seed_reports_url_outcomes_and_empty_output(client, monkeypatch):
-    url = "https://en.wikipedia.org/wiki/HTTP"
+@pytest.mark.parametrize(
+    ("url", "outcome_status", "detail", "collection_state", "idempotency_prefix"),
+    [
+        (
+            "https://en.wikipedia.org/wiki/HTTP",
+            "blocked",
+            "Blocked or challenge page detected",
+            "blocked",
+            "website-blocked",
+        ),
+        (
+            "https://example.com/sitemap.xml",
+            "non_html",
+            "URL did not return HTML",
+            "empty",
+            "website-non-html",
+        ),
+    ],
+)
+async def test_website_empty_seed_reports_url_outcomes(
+    client, monkeypatch, url, outcome_status, detail, collection_state, idempotency_prefix
+):
+    url_outcome = {"url": url, "status": outcome_status, "detail": detail}
 
     async def fake_scrape(_):
-        return [], [{"url": url, "status": "blocked", "detail": "Blocked or challenge page detected"}], None
+        return [], [url_outcome], None
 
     monkeypatch.setattr("app.main.scrape_website", fake_scrape)
     response = await client.post(
         "/v1/scrape/website",
-        headers={"Idempotency-Key": f"website-blocked-{uuid4()}"},
+        headers={"Idempotency-Key": f"{idempotency_prefix}-{uuid4()}"},
         json={"urls": url, "contentFormat": "markdown"},
     )
 
@@ -62,31 +83,9 @@ async def test_website_blocked_seed_reports_url_outcomes_and_empty_output(client
     assert response.status_code == 201
     assert body["status"] == "succeeded"
     assert body["output"] == []
-    assert body["urlOutcomes"] == [{"url": url, "status": "blocked", "detail": "Blocked or challenge page detected"}]
+    assert body["urlOutcomes"] == [url_outcome]
     assert body["list"]["listState"] == "no_results"
-    assert body["source"]["collectionState"] == "blocked"
-
-
-async def test_website_non_html_seed_reports_url_outcomes_and_empty_output(client, monkeypatch):
-    url = "https://example.com/sitemap.xml"
-
-    async def fake_scrape(_):
-        return [], [{"url": url, "status": "non_html", "detail": "URL did not return HTML"}], None
-
-    monkeypatch.setattr("app.main.scrape_website", fake_scrape)
-    response = await client.post(
-        "/v1/scrape/website",
-        headers={"Idempotency-Key": f"website-non-html-{uuid4()}"},
-        json={"urls": url, "contentFormat": "markdown"},
-    )
-
-    body = response.json()
-    assert response.status_code == 201
-    assert body["status"] == "succeeded"
-    assert body["output"] == []
-    assert body["urlOutcomes"] == [{"url": url, "status": "non_html", "detail": "URL did not return HTML"}]
-    assert body["list"]["listState"] == "no_results"
-    assert body["source"]["collectionState"] == "empty"
+    assert body["source"]["collectionState"] == collection_state
 
 
 async def test_dry_run_does_not_call_scraper(client, monkeypatch):

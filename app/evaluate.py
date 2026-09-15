@@ -55,6 +55,14 @@ def _top_results(body, limit):
     return [r for r in results[:limit] if isinstance(r, dict)]
 
 
+def _case_expects_relevance(case):
+    return bool(case.get("expectUrlPattern") or case.get("expectKeywords"))
+
+
+def _row_relevance_text(row):
+    return f"{row.get('url') or ''} {row.get('title') or ''}".casefold()
+
+
 def check_result_relevance(case, body):
     """Optional topical checks on the first N search results."""
     limit = case.get("resultCheckCount", 3)
@@ -69,12 +77,7 @@ def check_result_relevance(case, body):
     keywords = case.get("expectKeywords")
     if keywords:
         lowered = [k.casefold() for k in keywords]
-
-        def matches(row):
-            hay = f"{row.get('url') or ''} {row.get('title') or ''}".casefold()
-            return any(k in hay for k in lowered)
-
-        if not any(matches(row) for row in rows):
+        if not any(any(k in _row_relevance_text(row) for k in lowered) for row in rows):
             return "keyword_mismatch"
     return ""
 
@@ -131,7 +134,7 @@ async def evaluate(client, cases):
                 reason = "missing_required_fields"
             if not reason and capability.support_level == "unavailable":
                 reason = "unavailable"
-            if not reason and (case.get("expectUrlPattern") or case.get("expectKeywords")):
+            if not reason and _case_expects_relevance(case):
                 reason = check_result_relevance(case, body)
         except httpx.HTTPError as error:
             reason = type(error).__name__
