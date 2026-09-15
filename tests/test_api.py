@@ -39,9 +39,54 @@ async def test_website_uses_compatible_envelope(client, monkeypatch):
     assert body["debitMicrousd"] == 0
     assert body["output"] == [{"url": "https://example.com", "markdown": "# Example", "title": "Example"}]
     assert body["urlOutcomes"] == [{"url": "https://example.com", "status": "returned"}]
+    assert body["list"]["listState"] == "has_results"
     assert body["source"]["name"] == "public-website"
     assert body["source"]["urls"] == ["https://example.com"]
     assert body["source"]["collectionState"] == "complete"
+
+
+async def test_website_blocked_seed_reports_url_outcomes_and_empty_output(client, monkeypatch):
+    url = "https://en.wikipedia.org/wiki/HTTP"
+
+    async def fake_scrape(_):
+        return [], [{"url": url, "status": "blocked", "detail": "Blocked or challenge page detected"}], None
+
+    monkeypatch.setattr("app.main.scrape_website", fake_scrape)
+    response = await client.post(
+        "/v1/scrape/website",
+        headers={"Idempotency-Key": f"website-blocked-{uuid4()}"},
+        json={"urls": url, "contentFormat": "markdown"},
+    )
+
+    body = response.json()
+    assert response.status_code == 201
+    assert body["status"] == "succeeded"
+    assert body["output"] == []
+    assert body["urlOutcomes"] == [{"url": url, "status": "blocked", "detail": "Blocked or challenge page detected"}]
+    assert body["list"]["listState"] == "no_results"
+    assert body["source"]["collectionState"] == "blocked"
+
+
+async def test_website_non_html_seed_reports_url_outcomes_and_empty_output(client, monkeypatch):
+    url = "https://example.com/sitemap.xml"
+
+    async def fake_scrape(_):
+        return [], [{"url": url, "status": "non_html", "detail": "URL did not return HTML"}], None
+
+    monkeypatch.setattr("app.main.scrape_website", fake_scrape)
+    response = await client.post(
+        "/v1/scrape/website",
+        headers={"Idempotency-Key": f"website-non-html-{uuid4()}"},
+        json={"urls": url, "contentFormat": "markdown"},
+    )
+
+    body = response.json()
+    assert response.status_code == 201
+    assert body["status"] == "succeeded"
+    assert body["output"] == []
+    assert body["urlOutcomes"] == [{"url": url, "status": "non_html", "detail": "URL did not return HTML"}]
+    assert body["list"]["listState"] == "no_results"
+    assert body["source"]["collectionState"] == "empty"
 
 
 async def test_dry_run_does_not_call_scraper(client, monkeypatch):
