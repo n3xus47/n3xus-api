@@ -23,6 +23,12 @@ Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publiczneg
 
 Odpowiedzi zachowują podstawowy envelope (`requestId`, `route`, `capability`, `status`, `output`, `error`). Każdy niedry-run `POST` wymaga nagłówka `Idempotency-Key`; identyczne wywołanie zwraca zachowany rezultat. Lokalne wywołania są bezpłatne, dlatego `debitMicrousd` wynosi `0`.
 
+## Wyszukiwanie web (self-hosted)
+
+`POST /v1/search/web` uruchamia równolegle warianty zapytania w SearxNG oraz DuckDuckGo przez bibliotekę `ddgs` (w fusion i jako rezerwę, gdy SearxNG zawiedzie). Włączone silniki SearxNG ustawiasz w `searxng/settings.yml` (domyślnie m.in. duckduckgo, bing, startpage; google i brave są wyłączone). Pole `source.name` (`searxng`, `duckduckgo` lub `searxng+duckduckgo`) mówi, skąd przyszły wyniki.
+
+`source.collectionState: complete` — po filtrze trafności jest co najmniej jeden wynik w `output.results`. `empty` — odpowiedź `succeeded`, ale lista wyników jest pusta (SearxNG/DDG bez sensownych linków albo wszystko odrzucone); to nie oznacza błędu transportu. Jakość mierzysz harnesssem: `docs/evals/WORKFLOW.md` (np. `evals/search-agent-realism.json`).
+
 ## Poziomy wsparcia
 
 Każda możliwość ma przypisany poziom w rejestrze zwracanym przez `GET /v1/capabilities` (pole `supportLevel`). Opcjonalnie filtruj: `GET /v1/capabilities?capability=scrape.amazon`. Poziomy opisują **jakość kontraktu danych**, a nie sam fakt, że endpoint istnieje.
