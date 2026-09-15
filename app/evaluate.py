@@ -56,7 +56,12 @@ def _top_results(body, limit):
 
 
 def _case_expects_relevance(case):
-    return bool(case.get("expectUrlPattern") or case.get("expectKeywords"))
+    return bool(
+        case.get("expectUrlPattern")
+        or case.get("expectKeywords")
+        or case.get("expectEmpty")
+        or case.get("rejectUrlPattern")
+    )
 
 
 def _row_relevance_text(row):
@@ -67,8 +72,20 @@ def check_result_relevance(case, body):
     """Optional topical checks on the first N search results."""
     limit = case.get("resultCheckCount", 3)
     rows = _top_results(body, limit)
+    if case.get("expectEmpty"):
+        if rows:
+            return "expected_empty_results"
+        source = body.get("source") if isinstance(body.get("source"), dict) else {}
+        if source.get("collectionState") not in (None, "empty"):
+            return "expected_empty_collection_state"
+        return ""
     if not rows:
         return "missing_results_for_relevance"
+    reject = case.get("rejectUrlPattern")
+    if reject:
+        compiled_reject = re.compile(reject, re.I)
+        if any(compiled_reject.search(str(row.get("url") or "")) for row in rows):
+            return "rejected_url_pattern"
     pattern = case.get("expectUrlPattern")
     if pattern:
         compiled = re.compile(pattern, re.I)

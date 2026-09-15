@@ -75,6 +75,35 @@
     "expectUrlPattern": "github\\.com/.+fastapi"
   },
   {
+    "id": "search-realism-top-chefs-no-fashion-junk",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "top 10 celebrity chefs Gordon Ramsay",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results"
+    ],
+    "expectEmpty": true
+  },
+  {
+    "id": "search-realism-chefs-or-reject-fashion",
+    "capability": "search.web",
+    "route": "/v1/search/web",
+    "payload": {
+      "query": "celebrity chefs list Gordon Ramsay Jamie Oliver",
+      "maxResults": 8
+    },
+    "required": [
+      "output.results.*.url",
+      "output.results.*.title"
+    ],
+    "resultCheckCount": 5,
+    "rejectUrlPattern": "zara\\.com|mohito\\.com|topsecret\\.pl|pullandbear\\.com",
+    "expectKeywords": ["chef", "ramsay", "oliver", "cook", "recipe", "gordon", "jamie"]
+  },
+  {
     "id": "search-realism-ietf-rfc",
     "capability": "search.web",
     "route": "/v1/search/web",

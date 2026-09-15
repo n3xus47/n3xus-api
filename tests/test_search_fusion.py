@@ -60,6 +60,15 @@ def test_relevance_prefers_matching_phrase_over_partial_token():
     assert ranked[0].url == recipe.url
 
 
+def test_top_chefs_query_drops_fashion_junk():
+    query = "top 10 celebrity chefs Gordon Ramsay"
+    junk = [
+        SearchResult(title="Topy damskie", url="https://www.zara.com/pl/topy", snippet="Moda"),
+        SearchResult(title="Top.pl lifestyle", url="https://top.pl/", snippet="Porady"),
+    ]
+    assert apply_relevance_floor(query, junk) == []
+
+
 def test_apply_relevance_floor_drops_junk_when_top_score_below_floor():
     query = "Gordon Ramsay scrambled eggs recipe"
     football = SearchResult(

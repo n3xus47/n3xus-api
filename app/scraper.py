@@ -52,9 +52,36 @@ def normalize_crawl_url(url: str) -> str:
     return urlunparse((parsed.scheme.lower(), netloc, path, "", parsed.query, ""))
 
 
-def looks_blocked_html(html: str) -> bool:
-    sample = html[:8_000].lower()
+def _encyclopedia_article_text(html: str) -> str | None:
+    soup = BeautifulSoup(html, "html.parser")
+    node = soup.select_one("#mw-content-text") or soup.select_one(".mw-parser-output")
+    if not node:
+        return None
+    text = node.get_text(" ", strip=True)
+    return text if len(text) > 100 else None
+
+
+def looks_blocked_html(html: str, page_url: str | None = None) -> bool:
+    """Detect bot/challenge pages; avoid false positives from CSP/meta (e.g. Wikipedia)."""
+    if page_url and "wikipedia.org" in page_url.lower():
+        article = _encyclopedia_article_text(html)
+        if article:
+            return False
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "noscript", "meta"]):
+        tag.decompose()
+    body = soup.find("body")
+    sample = (body.get_text(" ", strip=True) if body else soup.get_text(" ", strip=True))[:8_000].lower()
     return any(marker in sample for marker in BLOCKED_HTML_MARKERS)
+
+
+def should_try_browser_fallback(reason: str, url: str) -> bool:
+    if reason == "blocked":
+        return True
+    if reason != "fetch_error":
+        return False
+    host = (urlparse(url).hostname or "").lower()
+    return host.endswith(".bbc.co.uk") or host.endswith(".bbc.com") or "bbcgoodfood.com" in host
 
 
 def website_collection_state(pages: list[Page], seed_outcomes: list[dict[str, str]]) -> str:
@@ -108,7 +135,7 @@ async def fetch_html(url: str) -> tuple[str, str]:
             if "html" not in response.headers.get("content-type", ""):
                 raise FetchFailure("non_html", "URL did not return HTML")
             html = response.text
-            if looks_blocked_html(html):
+            if looks_blocked_html(html, current_url):
                 raise FetchFailure("blocked", "Blocked or challenge page detected")
             return html, str(response.url)
     raise FetchFailure("fetch_error", "Too many redirects")
@@ -203,7 +230,7 @@ async def _browser_render(url: str) -> tuple[str, str, str]:
     from app.browser import render_html
 
     html, final_url = await render_html(url)
-    if looks_blocked_html(html):
+    if looks_blocked_html(html, url):
         raise FetchFailure("blocked", "Blocked or challenge page detected")
     return html, final_url, "js_rendered"
 
@@ -217,7 +244,7 @@ async def _load_page(url: str, content_format: str | None, max_chars: int) -> Pa
         html, final_url = await fetch_html(url)
     except Exception as error:
         reason, detail = _failure_reason(error)
-        if not settings.browser_fallback or reason != "blocked":
+        if not settings.browser_fallback or not should_try_browser_fallback(reason, url):
             return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
         try:
             html, final_url, render_detail = await _browser_render(url)

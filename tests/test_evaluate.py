@@ -102,7 +102,25 @@ def test_search_agent_realism_fixture_validates():
     path = Path(__file__).resolve().parents[1] / "evals" / "search-agent-realism.json"
     cases = validate_cases(json.loads(path.read_text()))
     assert len(cases) >= 5
-    assert all(c.get("expectUrlPattern") or c.get("expectKeywords") for c in cases)
+    assert all(
+        c.get("expectUrlPattern")
+        or c.get("expectKeywords")
+        or c.get("expectEmpty")
+        or c.get("rejectUrlPattern")
+        for c in cases
+    )
+
+
+def test_check_result_relevance_expect_empty():
+    body = {"source": {"collectionState": "empty"}, "output": {"results": []}}
+    assert check_result_relevance({"expectEmpty": True}, body) == ""
+    body_bad = {"source": {"collectionState": "complete"}, "output": {"results": [{"url": "https://zara.com", "title": "x"}]}}
+    assert check_result_relevance({"expectEmpty": True}, body_bad) == "expected_empty_results"
+
+
+def test_check_result_relevance_reject_url_pattern():
+    body = {"output": {"results": [{"url": "https://www.zara.com/x", "title": "Fashion"}]}}
+    assert check_result_relevance({"rejectUrlPattern": r"zara\.com"}, body) == "rejected_url_pattern"
 
 
 def test_check_result_relevance_url_pattern_and_keywords():

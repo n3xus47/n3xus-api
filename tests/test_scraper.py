@@ -24,6 +24,14 @@ def test_looks_blocked_html_detects_common_challenge_markers():
     assert not looks_blocked_html("<html><body><p>Article text</p></body></html>")
 
 
+def test_looks_blocked_html_does_not_flag_wikipedia_captcha_in_csp():
+    html = """
+    <html><head><meta http-equiv="Content-Security-Policy" content="script-src captcha.example"></head>
+    <body><div id="mw-content-text"><p>Hypertext Transfer Protocol (HTTP) is an application layer protocol.</p></div></body></html>
+    """
+    assert not looks_blocked_html(html, "https://en.wikipedia.org/wiki/HTTP")
+
+
 def test_website_collection_state():
     assert website_collection_state([], [{"url": "https://a", "status": "blocked"}]) == "blocked"
     assert website_collection_state([], [{"url": "https://a", "status": "fetch_error"}]) == "empty"

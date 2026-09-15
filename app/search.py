@@ -199,7 +199,19 @@ def _token_surface_forms(token: str) -> tuple[str, ...]:
 
 
 def _token_in_text(token: str, text: str) -> bool:
-    return any(form in text for form in _token_surface_forms(token))
+    lowered = text.lower()
+    for form in _token_surface_forms(token):
+        if re.search(rf"\b{re.escape(form)}\b", lowered):
+            return True
+    return False
+
+
+def count_matched_query_tokens(query: str, result: SearchResult) -> int:
+    tokens = query_tokens(query)
+    if not tokens:
+        return 0
+    hay = f"{result.title} {result.snippet or ''} {result.url}".lower()
+    return sum(1 for token in tokens if _token_in_text(token, hay))
 
 
 def relevance_score(query: str, result: SearchResult) -> float:
@@ -253,7 +265,12 @@ def apply_relevance_floor(query: str, ranked: list[SearchResult]) -> list[Search
             query,
         )
         return []
-    return [item for score, item in scored if score >= SEARCH_RELEVANCE_FLOOR]
+    kept = [item for score, item in scored if score >= SEARCH_RELEVANCE_FLOOR]
+    tokens = query_tokens(query)
+    if len(tokens) >= 3:
+        min_match = max(2, (len(tokens) + 1) // 2)
+        kept = [item for item in kept if count_matched_query_tokens(query, item) >= min_match]
+    return kept
 
 
 def finalize_fused_results(
