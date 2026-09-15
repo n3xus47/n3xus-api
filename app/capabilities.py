@@ -35,10 +35,12 @@ REGISTRY = (
     Capability(
         "research.deep",
         "experimental",
-        "searxng-ollama",
+        "searxng+duckduckgo-research",
         (
-            "Runs a multi-query search plan, dedupes diverse public sources, and returns numbered evidence with provenance.",
-            "Completeness is empty, partial, or complete based on collected evidence—not model confidence.",
+            "Plans up to six fused web searches (anchor question, LLM angles, query variants), dedupes URLs, filters off-topic hits, and scrapes up to eight pages.",
+            "mode raw (default) returns numbered evidence for agents without LLM synthesis; mode clean adds a sourced brief when Ollama is available.",
+            "Evidence uses page text when scraped; otherwise falls back to search snippets (collectionState partial).",
+            "Completeness is empty, partial, or complete from collected evidence—not model confidence.",
         ),
         "research",
     ),

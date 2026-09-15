@@ -6,12 +6,36 @@ from app.models import Page, SearchResult
 from app.search import SearchError, SearchFusionOutcome
 from app.research import (
     assess_completeness,
+    build_evidence,
     filter_relevant_hits,
     merge_search_hits,
+    merge_search_plan,
     pick_source_urls,
     plan_search_queries,
     research,
 )
+
+
+def test_merge_search_plan_includes_anchor_and_variants():
+    plan = merge_search_plan("What is asyncio?", ["asyncio tutorial"])
+    assert plan[0] == "What is asyncio?"
+    assert "asyncio tutorial" in plan
+    assert len(plan) >= 3
+
+
+def test_build_evidence_uses_snippet_when_scrape_empty():
+    hits = [
+        {
+            "url": "https://a.example/doc",
+            "title": "Asyncio guide",
+            "snippet": "Asyncio is Python's async framework for concurrent I/O.",
+            "searchQueries": ["asyncio"],
+        }
+    ]
+    evidence = build_evidence(hits, [], [{"url": "https://a.example/doc", "status": "blocked"}])
+    assert len(evidence) == 1
+    assert evidence[0]["collectionState"] == "partial"
+    assert "Asyncio" in (evidence[0]["excerpt"] or "")
 
 
 async def test_plan_search_queries_returns_multiple_distinct_queries(monkeypatch):
@@ -78,6 +102,28 @@ def test_pick_source_urls_prefers_distinct_domains():
     assert len({url.split("/")[2] for url in urls}) >= 2
 
 
+def test_pick_source_urls_prefers_higher_relevance_then_distinct_domains():
+    candidates = [
+        {
+            "url": "https://shop.example/zara-top",
+            "title": "Zara top",
+            "snippet": "Fashion",
+            "searchQueries": ["q", "q2"],
+        },
+        {
+            "url": "https://www.gordonramsay.com/chefs",
+            "title": "Celebrity chefs",
+            "snippet": "Gordon Ramsay restaurants celebrity chefs",
+            "searchQueries": ["q"],
+        },
+        {"url": "https://b.example/1", "title": "Chefs list", "snippet": "celebrity chefs ranking", "searchQueries": ["q"]},
+        {"url": "https://c.example/1", "title": "Chefs", "snippet": "celebrity chefs", "searchQueries": ["q"]},
+    ]
+    urls = pick_source_urls(candidates, limit=3, query="top 10 celebrity chefs")
+    assert urls[0] == "https://www.gordonramsay.com/chefs"
+    assert "https://shop.example/zara-top" not in urls[:2]
+
+
 @pytest.mark.parametrize(
     "kwargs, expected",
     [
@@ -128,8 +174,8 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
     monkeypatch.setattr("app.research.scrape_website", fake_scrape)
     monkeypatch.setattr("app.research.generate", fake_generate)
 
-    output = await research("What is asyncio?", None)
-    assert output["searchPlan"] == ["q1", "q2"]
+    output = await research("What is asyncio?", None, mode="clean")
+    assert "q1" in output["searchPlan"] and "q2" in output["searchPlan"]
     assert output["completeness"] == "complete"
     assert len(output["evidence"]) == 2
     assert output["evidence"][0]["index"] == 1
@@ -165,10 +211,41 @@ async def test_research_partial_when_one_planned_query_search_fails(monkeypatch)
     monkeypatch.setattr("app.research.scrape_website", fake_scrape)
     monkeypatch.setattr("app.research.generate", fake_generate)
 
-    output = await research("What is asyncio?", None)
+    output = await research("What is asyncio?", None, mode="clean")
     assert output["completeness"] == "partial"
     assert len(output["evidence"]) == 1
-    assert output["searchPlan"] == ["good query", "bad query"]
+    assert "good query" in output["searchPlan"] and "bad query" in output["searchPlan"]
+
+
+async def test_research_raw_mode_returns_numbered_evidence_without_llm_synthesis(monkeypatch):
+    async def fake_plan(_query, _context):
+        return ["asyncio python"]
+
+    async def fake_search(_query, _max):
+        return SearchFusionOutcome(
+            [SearchResult(title="Asyncio", url="https://a.example/asyncio", snippet="asyncio loops")],
+            None,
+            ("searxng",),
+        )
+
+    async def fake_scrape(_request):
+        return (
+            [Page(url="https://a.example/asyncio", markdown="# Asyncio", title="Asyncio")],
+            [{"url": "https://a.example/asyncio", "status": "returned"}],
+            None,
+        )
+
+    async def fail_generate(*_args, **_kwargs):
+        raise AssertionError("raw mode must not call LLM synthesis")
+
+    monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
+    monkeypatch.setattr("app.research.search_web_fused", fake_search)
+    monkeypatch.setattr("app.research.scrape_website", fake_scrape)
+    monkeypatch.setattr("app.research.generate", fail_generate)
+
+    output = await research("What is asyncio?", None, mode="raw")
+    assert "[1]" in output["answer"]
+    assert "https://a.example/asyncio" in output["answer"]
 
 
 async def test_research_skips_off_topic_hits_before_scrape(monkeypatch):
@@ -209,7 +286,7 @@ async def test_research_skips_off_topic_hits_before_scrape(monkeypatch):
     monkeypatch.setattr("app.research.scrape_website", fake_scrape)
     monkeypatch.setattr("app.research.generate", fake_generate)
 
-    output = await research("top 10 celebrity chefs", None)
+    output = await research("top 10 celebrity chefs", None, mode="clean")
     assert scraped_urls == ["https://www.gordonramsay.com/chefs"]
     assert output["completeness"] == "partial"
     assert len(output["evidence"]) == 1

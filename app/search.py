@@ -177,6 +177,17 @@ def filter_results_by_site_host(results: list[SearchResult], site_host: str) -> 
     return [item for item in results if url_matches_site_host(item.url, site_host)]
 
 
+def url_is_ad_or_tracker(url: str) -> bool:
+    parsed = urlparse(url)
+    host = (parsed.hostname or "").lower()
+    path = (parsed.path or "").lower()
+    if host.endswith("bing.com") and "aclick" in path:
+        return True
+    if "googleadservices.com" in host or path.startswith("/aclk"):
+        return True
+    return False
+
+
 def apply_site_restriction(query: str, ranked: list[SearchResult]) -> list[SearchResult]:
     _, site_host = parse_site_restriction(query)
     if not site_host:
@@ -251,13 +262,16 @@ def rank_search_results(query: str, results: list[SearchResult]) -> list[SearchR
     return [item for _, item in scored]
 
 
-def apply_relevance_floor(query: str, ranked: list[SearchResult]) -> list[SearchResult]:
+def apply_relevance_floor(
+    query: str, ranked: list[SearchResult], *, site_host: str | None = None
+) -> list[SearchResult]:
     if not ranked:
         return []
     scored = [(relevance_score(query, item), item) for item in ranked]
     scored.sort(key=lambda pair: pair[0], reverse=True)
     top_score = scored[0][0]
-    if top_score < SEARCH_RELEVANCE_FLOOR:
+    floor = 1.25 if site_host else SEARCH_RELEVANCE_FLOOR
+    if top_score < floor:
         logger.info(
             "search relevance floor dropped %s result(s); top_score=%s query=%r",
             len(ranked),
@@ -265,11 +279,16 @@ def apply_relevance_floor(query: str, ranked: list[SearchResult]) -> list[Search
             query,
         )
         return []
-    kept = [item for score, item in scored if score >= SEARCH_RELEVANCE_FLOOR]
+    kept = [item for score, item in scored if score >= floor]
     tokens = query_tokens(query)
     if len(tokens) >= 3:
-        min_match = max(2, (len(tokens) + 1) // 2)
-        kept = [item for item in kept if count_matched_query_tokens(query, item) >= min_match]
+        min_match = 2
+        strong = max(floor * 4, 8.0)
+        kept = [
+            item
+            for item in kept
+            if count_matched_query_tokens(query, item) >= min_match or relevance_score(query, item) >= strong
+        ]
     return kept
 
 
@@ -279,8 +298,10 @@ def finalize_fused_results(
     merged: list[SearchResult],
     max_results: int,
 ) -> list[SearchResult]:
+    _, site_host = parse_site_restriction(original_query)
     ranked = rank_search_results(relevance_query, merged)
-    above_floor = apply_relevance_floor(relevance_query, ranked)
+    ranked = [item for item in ranked if not url_is_ad_or_tracker(item.url)]
+    above_floor = apply_relevance_floor(relevance_query, ranked, site_host=site_host)
     return apply_site_restriction(original_query, above_floor[:max_results])
 
 
@@ -321,7 +342,7 @@ def merge_search_results(batches: list[list[SearchResult]], max_results: int) ->
                 continue
             if len(item.snippet or "") > len(existing.snippet or ""):
                 by_url[item.url] = item
-    return list(by_url.values())[: max_results * 3]
+    return list(by_url.values())
 
 
 async def search_web_fused(
@@ -331,15 +352,18 @@ async def search_web_fused(
     variant_limit: int | None = None,
 ) -> SearchFusionOutcome:
     """Run SearxNG variants and DuckDuckGo in parallel, merge, dedupe, and rank by relevance."""
-    engine_query, _ = parse_site_restriction(query)
+    engine_query, site_host = parse_site_restriction(query)
     relevance_query = engine_query or query
     limit = variant_limit if variant_limit is not None else settings.search_variant_limit
     variants = build_search_variants(relevance_query, limit=limit)
+    if site_host:
+        variants = [f"{item} site:{site_host}" for item in variants]
     per_variant = max(max_results, 10)
     providers: list[str] = []
 
     searxng_tasks = [_searxng_search_optional(variant, per_variant) for variant in variants]
-    ddg_task = _ddg_search_optional(relevance_query, max(max_results, 15))
+    ddg_query = query if site_host else relevance_query
+    ddg_task = _ddg_search_optional(ddg_query, max(max_results, 15))
     gathered = await asyncio.gather(*searxng_tasks, ddg_task, return_exceptions=True)
     searxng_outcomes = gathered[: len(searxng_tasks)]
     ddg_outcome = gathered[len(searxng_tasks)]
@@ -368,6 +392,13 @@ async def search_web_fused(
     answer = answers[0] if answers else None
     if ranked:
         return SearchFusionOutcome(ranked, answer, unique_providers)
+
+    if settings.search_ddg_enabled:
+        retry = await _ddg_search_optional(ddg_query, max(max_results, 20))
+        if retry:
+            ranked = finalize_fused_results(query, relevance_query, retry, max_results)
+            if ranked:
+                return SearchFusionOutcome(ranked, answer, ("duckduckgo",))
 
     if merged:
         return SearchFusionOutcome([], answer, unique_providers)

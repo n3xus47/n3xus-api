@@ -169,7 +169,7 @@ async def test_search_web_site_operator_filters_merged_hosts(client, monkeypatch
     from app.models import SearchResult
 
     async def mixed_searxng(query, _max):
-        assert "site:" not in query
+        assert "site:python.org" in query
         return (
             [
                 SearchResult(title="On site", url="https://python.org/about/", snippet="python"),

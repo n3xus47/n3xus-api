@@ -24,6 +24,18 @@ BLOCKED_HTML_MARKERS = (
     "enable javascript and cookies",
 )
 BROWSER_FALLBACK_MIN_EXTRACTABLE_CHARS = 200
+MAIN_CONTENT_SELECTORS = (
+    "#mw-content-text",
+    "main",
+    "article",
+    "[role='main']",
+    "#content",
+    "#main-content",
+    "#main",
+    ".entry-content",
+    ".post-content",
+    ".document",
+)
 
 
 class ScrapeError(Exception):
@@ -117,7 +129,11 @@ async def fetch_html(url: str) -> tuple[str, str]:
     current_url = url
     async with httpx.AsyncClient(
         timeout=settings.request_timeout_secs,
-        headers={"User-Agent": settings.user_agent, "Accept": "text/html,application/xhtml+xml"},
+        headers={
+            "User-Agent": settings.user_agent,
+            "Accept": "text/html,application/xhtml+xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        },
         follow_redirects=False,
     ) as client:
         for _ in range(6):
@@ -125,10 +141,16 @@ async def fetch_html(url: str) -> tuple[str, str]:
             response = await client.get(current_url)
             if response.is_redirect:
                 location = response.headers.get("location")
-                if not location:
-                    raise FetchFailure("fetch_error", "Redirect has no location")
-                current_url = urljoin(current_url, location)
-                continue
+                if location:
+                    current_url = urljoin(current_url, location)
+                    continue
+                content_type = response.headers.get("content-type", "")
+                if "html" in content_type and (response.text or "").strip():
+                    html = response.text
+                    if looks_blocked_html(html, current_url):
+                        raise FetchFailure("blocked", "Blocked or challenge page detected")
+                    return html, current_url
+                raise FetchFailure("fetch_error", "Redirect has no location")
             if response.status_code in BLOCKED_HTTP_STATUSES:
                 raise FetchFailure("blocked", f"HTTP {response.status_code}")
             response.raise_for_status()
@@ -141,13 +163,48 @@ async def fetch_html(url: str) -> tuple[str, str]:
     raise FetchFailure("fetch_error", "Too many redirects")
 
 
-def extract_page(html: str, url: str, content_format: str | None, max_chars: int) -> Page:
-    document = Document(html)
-    article_html = document.summary(html_partial=True)
+def _node_text(node) -> str:
+    return node.get_text("\n", strip=True) if node else ""
+
+
+def _drop_chrome(node):
+    for tag in node.find_all(["script", "style", "noscript", "svg", "iframe", "nav", "footer"]):
+        tag.decompose()
+    return node
+
+
+def _best_content_html(html: str) -> str:
+    """Prefer the longest real article over a thin Readability snippet."""
     source = BeautifulSoup(html, "html.parser")
-    article = BeautifulSoup(article_html, "html.parser")
-    title = document.short_title() or None
-    description_tag = source.find("meta", attrs={"name": "description"})
+    document = Document(html)
+    candidates: list = [BeautifulSoup(document.summary(html_partial=True), "html.parser")]
+    for selector in MAIN_CONTENT_SELECTORS:
+        node = source.select_one(selector)
+        if node:
+            candidates.append(node)
+    body = source.find("body")
+    if body:
+        clone = BeautifulSoup(str(body), "html.parser")
+        candidates.append(_drop_chrome(clone))
+    best = max(candidates, key=lambda node: len(_node_text(node)))
+    return str(best)
+
+
+def extract_page(html: str, url: str, content_format: str | None, max_chars: int) -> Page:
+    source = BeautifulSoup(html, "html.parser")
+    document = Document(html)
+    article = BeautifulSoup(_best_content_html(html), "html.parser")
+    title_tag = source.find("title")
+    heading = source.find(["h1", "h2"])
+    title = (
+        document.short_title()
+        or (title_tag.get_text(" ", strip=True) if title_tag else None)
+        or (heading.get_text(" ", strip=True) if heading else None)
+        or None
+    )
+    description_tag = source.find("meta", attrs={"name": "description"}) or source.find(
+        "meta", attrs={"property": "og:description"}
+    )
     language = source.html.get("lang") if source.html else None
     text = article.get_text("\n", strip=True)
     markdown = markdownify(str(article), heading_style="ATX").strip()

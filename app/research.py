@@ -1,3 +1,4 @@
+import asyncio
 import json
 from urllib.parse import urlparse
 
@@ -8,8 +9,11 @@ from app.search import build_search_variants, relevance_score, search_web_fused
 
 MIN_RESEARCH_HIT_RELEVANCE = 3.0
 
-MAX_EVIDENCE_PAGES = 6
-MAX_RESULTS_PER_QUERY = 5
+MAX_EVIDENCE_PAGES = 8
+MAX_RESULTS_PER_QUERY = 8
+MAX_SEARCH_PLAN_QUERIES = 6
+MAX_EVIDENCE_EXCERPT_CHARS = 2_500
+RESEARCH_SCRAPE_MAX_CHARS = 40_000
 
 
 async def plan_search_queries(query: str, context: str | None) -> list[str]:
@@ -26,10 +30,20 @@ Context: {context or ""}"""
                 return cleaned
     except (json.JSONDecodeError, TypeError, LlmError):
         pass
-    cleaned = query.strip()
-    if cleaned:
-        return build_search_variants(cleaned, limit=4)
-    return [query]
+    return []
+
+
+def merge_search_plan(query: str, planned: list[str]) -> list[str]:
+    """Universal open-web plan: anchor question + LLM angles + fusion variants."""
+    anchor = query.strip()
+    merged: list[str] = []
+    for candidate in [anchor, *planned, *build_search_variants(anchor, limit=5)]:
+        item = candidate.strip()
+        if item and item not in merged:
+            merged.append(item)
+        if len(merged) >= MAX_SEARCH_PLAN_QUERIES:
+            break
+    return merged or [query]
 
 
 def _registrable_domain(url: str) -> str:
@@ -66,10 +80,19 @@ def merge_search_hits(planned_queries: list[str], batches: list[tuple[str, list[
     return list(by_url.values())
 
 
-def pick_source_urls(candidates: list[dict], limit: int = MAX_EVIDENCE_PAGES) -> list[str]:
+def pick_source_urls(
+    candidates: list[dict],
+    limit: int = MAX_EVIDENCE_PAGES,
+    query: str | None = None,
+) -> list[str]:
     if not candidates:
         return []
-    ranked = sorted(candidates, key=lambda item: (-len(item["searchQueries"]), item["url"]))
+
+    def rank_key(item: dict) -> tuple:
+        relevance = _hit_relevance_score(query, item) if query else 0.0
+        return (-relevance, -len(item["searchQueries"]), item["url"])
+
+    ranked = sorted(candidates, key=rank_key)
     chosen: list[str] = []
     seen_domains: set[str] = set()
     for item in ranked:
@@ -120,57 +143,79 @@ def _collection_state(text: str, status: str) -> str:
 
 
 def build_evidence(
+    selected_hits: list[dict],
     pages: list[Page],
     url_outcomes: list[dict[str, str]] | None,
-    hits: list[dict],
 ) -> list[dict]:
-    hit_by_url = {item["url"]: item for item in hits}
-    outcome_by_url = {item["url"]: item["status"] for item in (url_outcomes or [])}
+    """Evidence from scraped pages; fall back to search snippets when scrape is empty or blocked."""
+    pages_by_url = {page.url: page for page in pages}
+    outcome_by_url = {item["url"]: item for item in (url_outcomes or [])}
     evidence: list[dict] = []
-    for index, page in enumerate(pages, start=1):
-        hit = hit_by_url.get(page.url, {})
-        text = _page_text(page)
-        status = outcome_by_url.get(page.url, "returned" if text else "not_returned")
-        collection_state = _collection_state(text, status)
+    for index, hit in enumerate(selected_hits, start=1):
+        url = hit["url"]
+        page = pages_by_url.get(url)
+        text = _page_text(page) if page else ""
+        outcome = outcome_by_url.get(url, {})
+        status = outcome.get("status", "returned" if text else "not_returned")
+        snippet = (hit.get("snippet") or "").strip()
+        if text:
+            excerpt = text[:MAX_EVIDENCE_EXCERPT_CHARS]
+            collection_state = _collection_state(text, status)
+        elif snippet:
+            excerpt = snippet[:MAX_EVIDENCE_EXCERPT_CHARS]
+            collection_state = "partial"
+        else:
+            excerpt = None
+            collection_state = "empty"
         evidence.append(
             {
                 "index": index,
-                "url": page.url,
-                "title": page.title or hit.get("title"),
+                "url": url,
+                "title": (page.title if page else None) or hit.get("title"),
                 "searchQueries": hit.get("searchQueries", []),
-                "excerpt": text[:500] if text else hit.get("snippet"),
+                "excerpt": excerpt,
                 "collectionState": collection_state,
             }
         )
     return evidence
 
 
-async def research(query: str, context: str | None) -> dict:
-    search_plan = await plan_search_queries(query, context)
-    batches: list[tuple[str, list[SearchResult]]] = []
-    queries_with_results = 0
-    for search_query in search_plan:
-        try:
-            fusion = await search_web_fused(search_query, MAX_RESULTS_PER_QUERY)
-            results = fusion.results
-        except Exception:  # one failed query must not abort the rest of the plan
-            results = []
-        if results:
-            queries_with_results += 1
-        batches.append((search_query, results))
+async def _search_batch(search_query: str) -> tuple[str, list[SearchResult]]:
+    try:
+        fusion = await search_web_fused(search_query, MAX_RESULTS_PER_QUERY)
+        return search_query, fusion.results
+    except Exception:
+        return search_query, []
 
-    hits = filter_relevant_hits(query, merge_search_hits(search_plan, batches))
-    selected_urls = pick_source_urls(hits)
+
+async def research(
+    query: str,
+    context: str | None,
+    *,
+    instructions: str | None = None,
+    mode: str = "raw",
+) -> dict:
+    llm_plan = await plan_search_queries(query, context)
+    search_plan = merge_search_plan(query, llm_plan)
+
+    batches = await asyncio.gather(*[_search_batch(item) for item in search_plan])
+    queries_with_results = sum(1 for _, results in batches if results)
+
+    hits = filter_relevant_hits(query, merge_search_hits(search_plan, list(batches)))
+    selected_urls = pick_source_urls(hits, query=query)
+    hit_by_url = {item["url"]: item for item in hits}
+    selected_hits = [hit_by_url[url] for url in selected_urls if url in hit_by_url]
+
     pages: list[Page] = []
     outcomes: list[dict[str, str]] | None = None
     if selected_urls:
         pages, outcomes, _ = await scrape_website(
-            WebsiteScrapeRequest(urls=selected_urls, contentFormat="markdown", maxChars=20_000)
+            WebsiteScrapeRequest(urls=selected_urls, contentFormat="markdown", maxChars=RESEARCH_SCRAPE_MAX_CHARS)
         )
 
-    evidence = build_evidence(pages, outcomes, hits)
-    pages_with_content = sum(1 for page in pages if _page_has_content(page))
-    distinct_domains = len({_registrable_domain(page.url) for page in pages if _page_has_content(page)})
+    evidence = build_evidence(selected_hits, pages, outcomes)
+    pages_with_content = sum(1 for item in evidence if item.get("collectionState") in {"complete", "partial"} and item.get("excerpt"))
+    distinct_domains = len({_registrable_domain(item["url"]) for item in evidence if item.get("excerpt")})
     completeness = assess_completeness(
         planned_queries=len(search_plan),
         queries_with_results=queries_with_results,
@@ -182,23 +227,27 @@ async def research(query: str, context: str | None) -> dict:
     numbered = "\n\n".join(
         f"[{item['index']}] {item['url']}\n{item.get('excerpt') or ''}" for item in evidence if item.get("excerpt")
     )
-    synthesis_prompt = (
-        "Answer the research question using only the numbered evidence below. "
-        "Every factual claim must cite one or more evidence numbers like [1]. "
-        "If the evidence is insufficient, say so explicitly and do not invent facts.\n"
-        f"Question: {query}\nContext: {context or ''}\n\nEvidence:\n{numbered or '(no evidence collected)'}"
-    )
-    try:
-        answer = await generate(synthesis_prompt)
-    except LlmError:
-        if not evidence:
-            answer = "No public evidence could be collected for this question with the current search configuration."
-        else:
-            answer = (
-                "Local LLM is unavailable; summarized evidence only:\n\n"
-                + numbered
-                + "\n\nConfigure Ollama and pull the model named in N3XUS_API_OLLAMA_MODEL for a synthesized answer."
-            )
+    if mode == "raw":
+        answer = numbered or "No public evidence could be collected for this question with the current search configuration."
+    else:
+        synthesis_prompt = (
+            "Answer the research question using only the numbered evidence below. "
+            "Every factual claim must cite one or more evidence numbers like [1]. "
+            "If the evidence is insufficient, say so explicitly and do not invent facts.\n"
+            f"Question: {query}\nContext: {context or ''}\n"
+            f"Instructions: {instructions or ''}\n\nEvidence:\n{numbered or '(no evidence collected)'}"
+        )
+        try:
+            answer = await generate(synthesis_prompt)
+        except LlmError:
+            if not evidence:
+                answer = "No public evidence could be collected for this question with the current search configuration."
+            else:
+                answer = (
+                    "Local LLM is unavailable; summarized evidence only:\n\n"
+                    + numbered
+                    + "\n\nConfigure Ollama and pull the model named in N3XUS_API_OLLAMA_MODEL for a synthesized answer."
+                )
 
     sources = [{"url": item["url"], "title": item.get("title")} for item in evidence]
     return {
@@ -207,4 +256,13 @@ async def research(query: str, context: str | None) -> dict:
         "searchPlan": search_plan,
         "evidence": evidence,
         "completeness": completeness,
+        "mode": mode,
     }
+
+
+def research_collection_state(completeness: str) -> str:
+    if completeness == "complete":
+        return "complete"
+    if completeness == "empty":
+        return "empty"
+    return "partial"

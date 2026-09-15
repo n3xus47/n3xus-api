@@ -29,6 +29,7 @@ from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
 from app.research import research as deep_research
+from app.research import research_collection_state
 from app.scraper import scrape_website, website_collection_state
 from app.search import SearchError, search_web_fused
 from app.seo import competitors as seo_competitors, rank as seo_rank
@@ -296,8 +297,32 @@ async def research_endpoint(payload: dict, raw: Request):
         return replay
     if payload.get("dryRun"):
         return envelope(route=raw.url.path, capability="research.deep", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
-    output = await deep_research(payload["query"], payload.get("context"))
-    return persist(raw.url.path, raw, envelope(route=raw.url.path, capability="research.deep", output=output), False)
+    mode = payload.get("mode") or "raw"
+    if mode not in {"raw", "clean"}:
+        return failure(raw.url.path, "research.deep", "invalid_request", "mode must be raw or clean.", 400)
+    output = await deep_research(
+        payload["query"],
+        payload.get("context"),
+        instructions=payload.get("instructions"),
+        mode=mode,
+    )
+    evidence = output.get("evidence") or []
+    source_urls = [item["url"] for item in evidence if isinstance(item, dict) and item.get("url")]
+    return persist(
+        raw.url.path,
+        raw,
+        envelope(
+            route=raw.url.path,
+            capability="research.deep",
+            output=output,
+            source=provenance(
+                "searxng+duckduckgo-research",
+                source_urls,
+                research_collection_state(str(output.get("completeness") or "empty")),
+            ),
+        ),
+        False,
+    )
 
 
 @app.post("/v1/scrape/extract")

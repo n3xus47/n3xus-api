@@ -13,7 +13,11 @@ from app.search import (
 )
 
 
-def test_searxng_engine_chain_is_free_local_default():
+def test_url_is_ad_or_tracker_drops_bing_click_wrappers():
+    from app.search import url_is_ad_or_tracker
+
+    assert url_is_ad_or_tracker("https://www.bing.com/aclick?ld=abc")
+    assert not url_is_ad_or_tracker("https://en.wikipedia.org/wiki/Gordon_Ramsay")
     assert "bing" in SEARXNG_ENGINE_CHAIN
 
 
@@ -34,7 +38,40 @@ def test_build_search_variants_includes_latest_when_query_signals_recency():
     assert "latest AI news 2026" in variants
 
 
-def test_merge_search_results_dedupes_by_url():
+def test_merge_search_results_keeps_later_provider_hits():
+    noise = [
+        SearchResult(title=f"Noise {i}", url=f"https://noise.example/{i}", snippet="x") for i in range(40)
+    ]
+    recipe = SearchResult(
+        title="Gordon Ramsay Beef Wellington",
+        url="https://www.gordonramsay.com/gr/recipes/beef-wellington",
+        snippet="Beef Wellington recipe",
+    )
+    merged = merge_search_results([noise, [recipe]], 8)
+    assert recipe.url in {item.url for item in merged}
+
+
+def test_apply_relevance_floor_keeps_entity_page_when_not_every_query_token_matches():
+    query = "Marie Curie Nobel Prize biography"
+    wiki = SearchResult(
+        title="Marie Curie - Wikipedia",
+        url="https://en.wikipedia.org/wiki/Marie_Curie",
+        snippet="Polish-French physicist and chemist",
+    )
+    junk = SearchResult(title="Microsoft account", url="https://account.microsoft.com/", snippet="Sign in")
+    kept = apply_relevance_floor(query, [wiki, junk])
+    assert kept[0].url == wiki.url
+
+
+def test_apply_relevance_floor_is_lower_for_site_restricted_queries():
+    query = "asyncio tutorial"
+    docs = SearchResult(
+        title="asyncio — Asynchronous I/O",
+        url="https://docs.python.org/3/library/asyncio.html",
+        snippet="asyncio is a library to write concurrent code",
+    )
+    kept = apply_relevance_floor(query, [docs], site_host="python.org")
+    assert kept and kept[0].url == docs.url
     a = SearchResult(title="A", url="https://a.example/1", snippet="s1")
     b = SearchResult(title="B", url="https://b.example/2", snippet=None)
     a2 = SearchResult(title="A2", url="https://a.example/1", snippet="s2 longer")

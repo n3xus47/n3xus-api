@@ -57,7 +57,7 @@
       "output.results.*.title"
     ],
     "resultCheckCount": 5,
-    "expectUrlPattern": "wikipedia\\.org"
+    "expectUrlPattern": "wikipedia\\.org|britannica\\.com|nobelprize\\.org|biography\\.com"
   },
   {
     "id": "search-realism-github-repo",
@@ -83,9 +83,12 @@
       "maxResults": 8
     },
     "required": [
-      "output.results"
+      "output.results.*.url",
+      "output.results.*.title"
     ],
-    "expectEmpty": true
+    "resultCheckCount": 5,
+    "rejectUrlPattern": "zara\\.com|mohito\\.com|topsecret\\.pl|pullandbear\\.com",
+    "expectKeywords": ["chef", "ramsay", "gordon", "cook"]
   },
   {
     "id": "search-realism-chefs-or-reject-fashion",

@@ -38,6 +38,24 @@ def test_website_collection_state():
     assert website_collection_state([extract_page("<html><body><p>x</p></body></html>", "https://a", "text", 1000)], [{"url": "https://a", "status": "returned"}]) == "complete"
 
 
+def test_extract_page_prefers_full_main_over_thin_readability_snippet():
+    html = """
+    <html lang='en'><head><title>RFC Editor</title></head>
+    <body>
+      <div id="sidebar">Cookie banner</div>
+      <main>
+        <h1>Request for Comments</h1>
+        <p>The RFC Editor publishes RFCs and related documents for the IETF.</p>
+        <p>Search the RFC series, errata, and publication process here.</p>
+      </main>
+    </body></html>
+    """
+    page = extract_page(html, "https://www.rfc-editor.org/", "text", 50_000)
+    assert page.title == "RFC Editor"
+    assert "IETF" in (page.text or "")
+    assert len(page.text or "") > 80
+
+
 def test_extract_page_removes_navigation_and_applies_content_format():
     page = extract_page(
         """
@@ -100,6 +118,39 @@ async def test_fetch_html_marks_http_403_as_blocked(monkeypatch):
     with pytest.raises(FetchFailure) as error:
         await fetch_html("https://example.com")
     assert error.value.reason == "blocked"
+
+
+async def test_fetch_html_uses_html_body_when_redirect_has_no_location(monkeypatch):
+    class Response:
+        is_redirect = True
+        status_code = 300
+        headers = {"content-type": "text/html"}
+        text = "<html><head><title>Choices</title></head><body><p>Mirror list for dummy file.</p></body></html>"
+        url = "https://www.w3.org/dummy.html"
+
+        def raise_for_status(self):
+            return None
+
+    class Client:
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return None
+
+        async def get(self, _url):
+            return Response()
+
+    monkeypatch.setattr("app.scraper.httpx.AsyncClient", lambda **kwargs: Client())
+
+    async def public_ok(_url: str) -> None:
+        return None
+
+    monkeypatch.setattr("app.scraper.assert_public_url", public_ok)
+
+    html, final = await fetch_html("https://www.w3.org/dummy.html")
+    assert "Mirror list" in html
+    assert final.endswith("dummy.html")
 
 
 async def test_scrape_website_reports_seed_outcomes_and_deduplicates_crawl(monkeypatch):
