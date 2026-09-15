@@ -1,0 +1,2599 @@
+{
+  "fixtures": [
+    {
+      "id": "website-01",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://example.com",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-02",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://www.example.org",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-03",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://www.iana.org/domains/example",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-04",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://en.wikipedia.org/wiki/HTTP",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-05",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://httpbin.org/html",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-06",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.html",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-07",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://en.wikipedia.org/wiki/OpenStreetMap",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-08",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://www.gnu.org/licenses/gpl-3.0.en.html",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-09",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://datatracker.ietf.org/doc/html/rfc7231",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "website-10",
+      "capability": "scrape.website",
+      "route": "/v1/scrape/website",
+      "payload": {
+        "urls": "https://docs.python.org/3/license.html",
+        "contentFormat": "text",
+        "maxChars": 50000
+      },
+      "required": [
+        "output.*.url",
+        "output.*.title",
+        "output.*.text"
+      ]
+    },
+    {
+      "id": "search-01",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Python programming language",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-02",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "OpenStreetMap",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-03",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "GitHub octocat",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-04",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Wikipedia HTTP",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-05",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "GNU GPL license",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-06",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "IETF RFC 7231",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-07",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Example domain",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-08",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Docker containers",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-09",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "FastAPI framework",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "search-10",
+      "capability": "search.web",
+      "route": "/v1/search/web",
+      "payload": {
+        "query": "Creative Commons",
+        "maxResults": 5
+      },
+      "required": [
+        "output.results.*.url",
+        "output.results.*.title"
+      ]
+    },
+    {
+      "id": "github-01",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/profile",
+      "payload": {
+        "usernames": [
+          "octocat"
+        ]
+      },
+      "required": [
+        "output.*.login",
+        "output.*.html_url"
+      ]
+    },
+    {
+      "id": "github-02",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/profile",
+      "payload": {
+        "usernames": [
+          "torvalds"
+        ]
+      },
+      "required": [
+        "output.*.login"
+      ]
+    },
+    {
+      "id": "github-03",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/profile",
+      "payload": {
+        "usernames": [
+          "github"
+        ]
+      },
+      "required": [
+        "output.*.login"
+      ]
+    },
+    {
+      "id": "github-04",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/repo",
+      "payload": {
+        "repository": "octocat/Hello-World"
+      },
+      "required": [
+        "output.repository.full_name",
+        "output.repository.html_url"
+      ]
+    },
+    {
+      "id": "github-05",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/repo",
+      "payload": {
+        "repository": "torvalds/linux"
+      },
+      "required": [
+        "output.repository.full_name"
+      ]
+    },
+    {
+      "id": "github-06",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/search",
+      "payload": {
+        "query": "stars:>50000",
+        "type": "repositories",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.full_name"
+      ]
+    },
+    {
+      "id": "github-07",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/search",
+      "payload": {
+        "query": "language:Rust stars:>10000",
+        "type": "repositories",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.full_name"
+      ]
+    },
+    {
+      "id": "github-08",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/issues",
+      "payload": {
+        "repository": "octocat/Hello-World",
+        "maxItems": 3
+      },
+      "required": [
+        "output.*.number",
+        "output.*.title"
+      ]
+    },
+    {
+      "id": "github-09",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/commits",
+      "payload": {
+        "repository": "octocat/Hello-World",
+        "maxItems": 3
+      },
+      "required": [
+        "output.*.sha"
+      ]
+    },
+    {
+      "id": "github-10",
+      "capability": "scrape.github",
+      "route": "/v1/scrape/github/contents",
+      "payload": {
+        "repository": "octocat/Hello-World",
+        "path": "README"
+      },
+      "required": [
+        "output.name",
+        "output.path"
+      ]
+    },
+    {
+      "id": "youtube-01",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/transcript",
+      "payload": {
+        "url": "https://www.youtube.com/watch?v=8aGhZQkoFbQ",
+        "includeSegments": false,
+        "maxChars": 5000
+      },
+      "required": [
+        "output.text"
+      ]
+    },
+    {
+      "id": "youtube-02",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/transcript",
+      "payload": {
+        "url": "https://www.youtube.com/watch?v=kJQP7kiw5Fk",
+        "includeSegments": false,
+        "maxChars": 5000
+      },
+      "required": [
+        "output.text"
+      ]
+    },
+    {
+      "id": "youtube-03",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/thumbnail",
+      "payload": {
+        "url": "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+      },
+      "required": [
+        "output.thumbnail"
+      ]
+    },
+    {
+      "id": "youtube-04",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/search",
+      "payload": {
+        "query": "python tutorial",
+        "maxItems": 3
+      },
+      "required": [
+        "output.*.id",
+        "output.*.title",
+        "output.*.url"
+      ]
+    },
+    {
+      "id": "youtube-05",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/shorts",
+      "payload": {
+        "channels": [
+          "GoogleDevelopers"
+        ],
+        "maxItems": 3
+      },
+      "required": [
+        "output.*.id",
+        "output.*.isShort"
+      ]
+    },
+    {
+      "id": "youtube-06",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/channel",
+      "payload": {
+        "channels": [
+          "GoogleDevelopers",
+          "wikimedia"
+        ],
+        "maxItems": 4
+      },
+      "required": [
+        "output.*.title",
+        "output.*.channelHandle"
+      ]
+    },
+    {
+      "id": "youtube-07",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/search",
+      "payload": {
+        "query": "wikimedia",
+        "maxItems": 3
+      },
+      "required": [
+        "output.*.id"
+      ]
+    },
+    {
+      "id": "youtube-08",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/thumbnail",
+      "payload": {
+        "url": "https://www.youtube.com/watch?v=BaW_jenozKc"
+      },
+      "required": [
+        "output.thumbnail"
+      ]
+    },
+    {
+      "id": "youtube-09",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/search",
+      "payload": {
+        "query": "linux kernel",
+        "maxItems": 2
+      },
+      "required": [
+        "output.*.url"
+      ]
+    },
+    {
+      "id": "youtube-10",
+      "capability": "scrape.youtube",
+      "route": "/v1/scrape/youtube/transcript",
+      "payload": {
+        "url": "https://www.youtube.com/watch?v=aircAruvnKk",
+        "includeSegments": false,
+        "maxChars": 8000
+      },
+      "required": [
+        "output.text"
+      ]
+    },
+    {
+      "id": "research-01",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is HTTP?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-02",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "Who created Linux?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-03",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is OpenStreetMap?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-04",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is the GPL license?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-05",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is Python used for?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-06",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is Docker?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-07",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is FastAPI?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-08",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is GitHub?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-09",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is Creative Commons?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "research-10",
+      "capability": "research.deep",
+      "route": "/v1/research/deep",
+      "payload": {
+        "query": "What is RFC 7231 about?"
+      },
+      "required": [
+        "output.answer",
+        "output.sources"
+      ]
+    },
+    {
+      "id": "places-01",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Eiffel Tower",
+        "maxItems": 3,
+        "location": "Paris"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-02",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Brandenburg Gate",
+        "maxItems": 3,
+        "location": "Berlin"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-03",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Colosseum",
+        "maxItems": 3,
+        "location": "Rome"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-04",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Big Ben",
+        "maxItems": 3,
+        "location": "London"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-05",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Sydney Opera House",
+        "maxItems": 3,
+        "location": "Sydney"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-06",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Central Park",
+        "maxItems": 3,
+        "location": "New York"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-07",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Acropolis",
+        "maxItems": 3,
+        "location": "Athens"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-08",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Sagrada Familia",
+        "maxItems": 3,
+        "location": "Barcelona"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-09",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Charles Bridge",
+        "maxItems": 3,
+        "location": "Prague"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "places-10",
+      "capability": "scrape.google",
+      "route": "/v1/scrape/google/places",
+      "payload": {
+        "search": "Wawel Castle",
+        "maxItems": 3,
+        "location": "Krakow"
+      },
+      "required": [
+        "output.places.*.name",
+        "output.places.*.latitude"
+      ]
+    },
+    {
+      "id": "amazon-01",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "python programming book",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-02",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "linux administration",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-03",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "open source",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-04",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "keyboard mechanical",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-05",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "coffee maker",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-06",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "running shoes",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-07",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "board games",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-08",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "science fiction novel",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-09",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "wireless mouse",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "amazon-10",
+      "capability": "scrape.amazon",
+      "route": "/v1/scrape/amazon/search",
+      "payload": {
+        "query": "cooking cookbook",
+        "maxItems": 5
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-01",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "open source",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-02",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "python",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-03",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "linux",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-04",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "wikipedia",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-05",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "creative commons",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-06",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "docker",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-07",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "fastapi",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-08",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "github",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-09",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "ietf",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "social-10",
+      "capability": "scrape.twitter",
+      "route": "/v1/scrape/twitter/search",
+      "payload": {
+        "query": "gnu",
+        "maxItems": 3
+      },
+      "required": [
+        "output.items.*.url",
+        "output.items.*.title"
+      ]
+    },
+    {
+      "id": "seo-01",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "example domain",
+        "domain": "example.com",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-02",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "python programming",
+        "domain": "python.org",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-03",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "wikipedia",
+        "domain": "wikipedia.org",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-04",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "docker",
+        "domain": "docker.com",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-05",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "github",
+        "domain": "github.com",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-06",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "openstreetmap",
+        "domain": "openstreetmap.org",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-07",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "gnu license",
+        "domain": "gnu.org",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-08",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "fastapi",
+        "domain": "fastapi.tiangolo.com",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-09",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "ietf http",
+        "domain": "ietf.org",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    },
+    {
+      "id": "seo-10",
+      "capability": "seo.read",
+      "route": "/v1/seo/rank",
+      "payload": {
+        "keyword": "creative commons",
+        "domain": "creativecommons.org",
+        "depth": 10
+      },
+      "required": [
+        "output.keyword",
+        "output.domain",
+        "output.results"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "website-01",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1167.2804379995796,
+      "reason": "",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://example.com/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:03.088081+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "website-02",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1014.9448580004901,
+      "reason": "",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://www.example.org/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:04.103038+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "website-03",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 140.85071600038646,
+      "reason": "",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "http://www.iana.org/help/example-domains"
+        ],
+        "retrievedAt": "2026-09-14T23:44:04.242612+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "website-04",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 392.71046700014267,
+      "reason": "empty",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://en.wikipedia.org/wiki/HTTP"
+        ],
+        "retrievedAt": "2026-09-14T23:44:04.635858+00:00",
+        "collectionState": "blocked"
+      }
+    },
+    {
+      "id": "website-05",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.6666666666666666,
+      "latencyMs": 743.4543389999817,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://httpbin.org/html"
+        ],
+        "retrievedAt": "2026-09-14T23:44:05.378888+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "website-06",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 283.8571939992107,
+      "reason": "empty",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.html"
+        ],
+        "retrievedAt": "2026-09-14T23:44:05.663139+00:00",
+        "collectionState": "empty"
+      }
+    },
+    {
+      "id": "website-07",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 539.9231669998699,
+      "reason": "empty",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://en.wikipedia.org/wiki/OpenStreetMap"
+        ],
+        "retrievedAt": "2026-09-14T23:44:06.202480+00:00",
+        "collectionState": "blocked"
+      }
+    },
+    {
+      "id": "website-08",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 614.559415000258,
+      "reason": "",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://www.gnu.org/licenses/gpl-3.0.en.html"
+        ],
+        "retrievedAt": "2026-09-14T23:44:06.816884+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "website-09",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 661.730224999701,
+      "reason": "",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://datatracker.ietf.org/doc/html/rfc7231"
+        ],
+        "retrievedAt": "2026-09-14T23:44:07.478413+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "website-10",
+      "capability": "scrape.website",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 377.24647400045797,
+      "reason": "",
+      "source": {
+        "name": "public-website",
+        "urls": [
+          "https://docs.python.org/3/license.html"
+        ],
+        "retrievedAt": "2026-09-14T23:44:07.855252+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-01",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 2619.343710999601,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://en.wikipedia.org/wiki/Python_(programming_language)",
+          "https://www.w3schools.com/python/",
+          "https://docs.python.org/",
+          "https://www.programiz.com/python-programming/online-compiler/",
+          "https://www.python.org/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:10.471455+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-02",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3481.0762500001147,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.openstreetmap.org/",
+          "https://openstreetmap.org.pl/mapa/",
+          "https://en.wikipedia.org/wiki/OpenStreetMap",
+          "https://openstreetmap.org.pl/",
+          "https://welcome.openstreetmap.org/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:13.952425+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-03",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 6769.532268000148,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://github.com/",
+          "https://github.com/login",
+          "https://en.wikipedia.org/wiki/GitHub",
+          "https://desktop.github.com/download/",
+          "https://github.com/github"
+        ],
+        "retrievedAt": "2026-09-14T23:44:20.726303+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-04",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3267.1096580006633,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.wikipedia.org/",
+          "https://en.wikipedia.org/wiki/Main_Page",
+          "https://en.wikipedia.org/wiki/Wikipedia",
+          "https://pl.wikipedia.org/wiki/Wikipedia",
+          "https://de.wikipedia.org/wiki/Wikipedia:Hauptseite"
+        ],
+        "retrievedAt": "2026-09-14T23:44:23.993558+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-05",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3891.636528000163,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.gnu.org.pl/",
+          "https://pl.wikipedia.org/wiki/GNU",
+          "https://www.gnu.org/",
+          "https://en.wikipedia.org/wiki/GNU",
+          "https://en.wikipedia.org/wiki/GNU_Project"
+        ],
+        "retrievedAt": "2026-09-14T23:44:27.884973+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-06",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 11140.927207999994,
+      "reason": "",
+      "source": {
+        "name": "searxng",
+        "urls": [
+          "https://webapps.stackexchange.com/questions/137114/turn-off-viewer-icons-and-names",
+          "https://webapps.stackexchange.com/questions/20644/how-do-i-read-a-users-tweets-starting-with-the-oldest",
+          "https://webapps.stackexchange.com/questions/15150/how-to-view-and-download-old-twitter-direct-messages",
+          "https://webapps.stackexchange.com/questions/90160/how-do-i-get-a-google-n-gram-plot-with-a-logarithmic-axis",
+          "https://webapps.stackexchange.com/questions/107568/is-it-possible-to-download-3d-models-from-artstation-com"
+        ],
+        "retrievedAt": "2026-09-14T23:44:39.025105+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-07",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3604.150813999695,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://translate.google.es/",
+          "https://images.google.es/",
+          "https://www.google.es/travel/",
+          "https://www.google.es/index.html",
+          "https://earth.google.es/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:42.625898+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-08",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3596.762045000105,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://en.wikipedia.org/wiki/Docker_(software)",
+          "https://www.docker.com/",
+          "https://www.docker.com/products/docker-desktop/",
+          "https://docs.docker.com/",
+          "https://docs.docker.com/desktop/setup/install/windows-install/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:46.222901+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-09",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3596.2513029999172,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://www.lu.se/",
+          "https://www.lub.lu.se/",
+          "https://webmail.lu.se/owa/",
+          "https://www.lunduniversity.lu.se/webmail",
+          "https://www.medarbetarwebben.lu.se/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:49.823058+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "search-10",
+      "capability": "search.web",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3861.954152999715,
+      "reason": "",
+      "source": {
+        "name": "searxng+duckduckgo",
+        "urls": [
+          "https://pl.creative.com/",
+          "https://pl.creative.com/sale/",
+          "https://www.adobe.com/creativecloud.html?msockid=0a4413cbf609630f17c5041ff76b6285",
+          "https://us.creative.com/",
+          "https://en.creative.com/"
+        ],
+        "retrievedAt": "2026-09-14T23:44:53.685419+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-01",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 414.0696290005508,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:54.099153+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-02",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 420.7987960007813,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:54.508320+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-03",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 504.21947199993156,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:55.024475+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-04",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1429.8117529997398,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:56.453930+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-05",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1436.6739580000285,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:57.890433+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-06",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 402.40238000023965,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:58.293280+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-07",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 516.4705830002276,
+      "reason": "",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:58.809451+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-08",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 409.1496040000493,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:59.218951+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-09",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 513.1012230003762,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:44:59.731637+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "github-10",
+      "capability": "scrape.github",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 511.01864500014926,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "github-public-rest",
+        "urls": [],
+        "retrievedAt": "2026-09-14T23:45:00.242762+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-01",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1129.3126689997735,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "https://www.youtube.com/watch?v=8aGhZQkoFbQ"
+        ],
+        "retrievedAt": "2026-09-14T23:45:01.371861+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-02",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1022.2428800007037,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "https://www.youtube.com/watch?v=kJQP7kiw5Fk"
+        ],
+        "retrievedAt": "2026-09-14T23:45:02.394029+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-03",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 156.27897000013036,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+        ],
+        "retrievedAt": "2026-09-14T23:45:02.549986+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-04",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 784.676643000239,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "ytsearch3:python tutorial"
+        ],
+        "retrievedAt": "2026-09-14T23:45:03.335354+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-05",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 8358.753585999693,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "https://www.youtube.com/@GoogleDevelopers/shorts"
+        ],
+        "retrievedAt": "2026-09-14T23:45:11.693986+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-06",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 45725.79730800044,
+      "reason": "scrape_request_failed",
+      "source": null
+    },
+    {
+      "id": "youtube-07",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 688.8685129997612,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "ytsearch3:wikimedia"
+        ],
+        "retrievedAt": "2026-09-14T23:45:58.108872+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-08",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": false,
+      "coverage": 0.0,
+      "latencyMs": 66.0181699995519,
+      "reason": "scrape_request_failed",
+      "source": null
+    },
+    {
+      "id": "youtube-09",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 748.6603159995866,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "ytsearch2:linux kernel"
+        ],
+        "retrievedAt": "2026-09-14T23:45:58.923388+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "youtube-10",
+      "capability": "scrape.youtube",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1016.9080099994972,
+      "reason": "",
+      "source": {
+        "name": "yt-dlp-youtube-transcript",
+        "urls": [
+          "https://www.youtube.com/watch?v=aircAruvnKk"
+        ],
+        "retrievedAt": "2026-09-14T23:45:59.940070+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "research-01",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 88681.60130999968,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-02",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 70247.22426300013,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-03",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 64276.87600900026,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-04",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 101219.22525099944,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-05",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 90031.461132,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-06",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 91658.06225400047,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-07",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 80992.34776399954,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-08",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 103184.37614100003,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-09",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 73460.31172799939,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "research-10",
+      "capability": "research.deep",
+      "supportLevel": "experimental",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 93684.81124800019,
+      "reason": "",
+      "source": null
+    },
+    {
+      "id": "places-01",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 585.0054849997832,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:17.961601+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-02",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 306.66223600019293,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:18.268412+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-03",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 410.21497800011275,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:18.678237+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-04",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 410.049610999522,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:19.087959+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-05",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 306.54422099996737,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:19.394904+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-06",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 307.0121789996847,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:19.702069+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-07",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 205.31046799987962,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:19.906986+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-08",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 410.05368500009354,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:20.317223+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-09",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 306.5231999999014,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:20.623822+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "places-10",
+      "capability": "scrape.google",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 204.63169400045444,
+      "reason": "",
+      "source": {
+        "name": "openstreetmap-nominatim",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:20.828584+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-01",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1737.6925770004163,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:22.566057+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-02",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1398.81416299977,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:23.964800+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-03",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1212.8958579996834,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:25.177936+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-04",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1773.0998120005097,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:26.950893+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-05",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1808.0497830005697,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:28.759037+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-06",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1996.7966820004222,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:30.755853+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-07",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 2331.566242000008,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:33.087264+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-08",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1483.5034699999596,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:34.570812+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-09",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1808.0486589997236,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:36.378818+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "amazon-10",
+      "capability": "scrape.amazon",
+      "supportLevel": "structured",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 1682.0525920002183,
+      "reason": "",
+      "source": {
+        "name": "public-amazon-structured",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:38.060985+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-01",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 3307.261040999947,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:41.366807+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-02",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 3475.758788999883,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:44.837483+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-03",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 3426.7185850003443,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:48.269258+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-04",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 2967.939082000157,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:51.237309+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-05",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 8294.897988999764,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:00:59.532001+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-06",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 2772.523175999595,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:02.300359+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-07",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 2658.362407999448,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:04.963072+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-08",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 2505.9471159993336,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:07.470116+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-09",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 2521.9672390003325,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:09.986686+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "social-10",
+      "capability": "scrape.twitter",
+      "supportLevel": "best_effort",
+      "success": false,
+      "coverage": 0.8333333333333334,
+      "latencyMs": 2859.1533970002274,
+      "reason": "missing_required_fields",
+      "source": {
+        "name": "public-x-pages",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:12.845932+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-01",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 2482.595907999894,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:15.330209+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-02",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 10018.424217000756,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:25.348222+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-03",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3677.0899009998175,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:29.029805+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-04",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3376.8446920003043,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:32.406711+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-05",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3073.911338000471,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:35.476393+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-06",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3791.8086039999253,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:39.272589+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-07",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 6962.468282000373,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:46.235283+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-08",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 2510.5898450001405,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:48.741236+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-09",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 2735.643598999559,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:51.480334+00:00",
+        "collectionState": "complete"
+      }
+    },
+    {
+      "id": "seo-10",
+      "capability": "seo.read",
+      "supportLevel": "best_effort",
+      "success": true,
+      "coverage": 1.0,
+      "latencyMs": 3043.987288000608,
+      "reason": "",
+      "source": {
+        "name": "searxng-local-serp",
+        "urls": [],
+        "retrievedAt": "2026-09-15T00:01:54.525073+00:00",
+        "collectionState": "complete"
+      }
+    }
+  ]
+}
