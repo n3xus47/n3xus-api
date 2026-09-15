@@ -19,7 +19,16 @@ class Capability:
 
 
 REGISTRY = (
-    Capability("scrape.website", "structured", "readability-playwright", ("JavaScript fallback is best-effort.",), "website"),
+    Capability(
+        "scrape.website",
+        "structured",
+        "readability-playwright",
+        (
+            "JavaScript fallback is best-effort.",
+            "Pages may include structuredData from JSON-LD and a recipe object parsed from JSON-LD, HTML recipe markup, or markdown ingredient lists/quantified lines.",
+        ),
+        "website",
+    ),
     Capability(
         "search.web",
         "best_effort",
@@ -112,7 +121,16 @@ REGISTRY = (
         "places",
     ),
     Capability("scrape.threads", "best_effort", "public-page-fetch", ("This is not a structured Threads post collector.",), "social"),
-    Capability("scrape.extract", "experimental", "readability-ollama", ("Extraction quality depends on the local model.",), "extract"),
+    Capability(
+        "scrape.extract",
+        "experimental",
+        "jsonld-html-ollama",
+        (
+            "Prefers JSON-LD and HTML recipe markup; the local model runs only when those are missing.",
+            "LLM extraction quality still depends on the configured Ollama model.",
+        ),
+        "extract",
+    ),
     Capability("scrape.deep", "experimental", "searxng-ollama", ("This is a local research dossier, not a dedicated entity-data source.",), "research"),
     Capability(
         "email.send",
@@ -163,7 +181,7 @@ REGISTRY = (
         "playwright-ollama",
         (
             "Public pages only; bounded to eight safe browser steps.",
-            "Returns a plan/execute safe-action trace for audit; unsafe actions are blocked before execution.",
+            "Returns a plan/execute safe-action trace for audit. CAPTCHA and login walls open a headed browser for the operator; the agent does not type credentials or complete purchases.",
         ),
         "browser-act",
     ),

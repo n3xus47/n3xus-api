@@ -50,6 +50,8 @@ class Page(BaseModel):
     language: str | None = None
     truncated: bool | None = None
     total_chars: int | None = Field(default=None, alias="totalChars")
+    structured_data: list[dict] | None = Field(default=None, alias="structuredData")
+    recipe: dict | None = None
 
 
 class SearchResult(BaseModel):

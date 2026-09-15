@@ -13,6 +13,7 @@ from readability import Document
 
 from app.config import settings
 from app.models import Page, WebsiteScrapeRequest
+from app.structured_data import content_recipe_score, parse_json_ld, recipe_from_page
 
 BLOCKED_HTTP_STATUSES = {401, 403, 429, 451}
 BLOCKED_HTML_MARKERS = (
@@ -168,13 +169,13 @@ def _node_text(node) -> str:
 
 
 def _drop_chrome(node):
-    for tag in node.find_all(["script", "style", "noscript", "svg", "iframe", "nav", "footer"]):
+    for tag in node.find_all(["script", "style", "noscript", "svg", "iframe", "nav", "footer", "aside", "form"]):
         tag.decompose()
     return node
 
 
 def _best_content_html(html: str) -> str:
-    """Prefer the longest real article over a thin Readability snippet."""
+    """Prefer recipe-dense article HTML over a longer page with shop chrome."""
     source = BeautifulSoup(html, "html.parser")
     document = Document(html)
     candidates: list = [BeautifulSoup(document.summary(html_partial=True), "html.parser")]
@@ -186,7 +187,7 @@ def _best_content_html(html: str) -> str:
     if body:
         clone = BeautifulSoup(str(body), "html.parser")
         candidates.append(_drop_chrome(clone))
-    best = max(candidates, key=lambda node: len(_node_text(node)))
+    best = max(candidates, key=lambda node: content_recipe_score(_node_text(node)))
     return str(best)
 
 
@@ -213,6 +214,8 @@ def extract_page(html: str, url: str, content_format: str | None, max_chars: int
     if truncated:
         text = text[:max_chars]
         markdown = markdown[:max_chars]
+    structured = parse_json_ld(html)
+    recipe = recipe_from_page(html, url, title, structured, markdown)
 
     return Page(
         url=url,
@@ -223,6 +226,8 @@ def extract_page(html: str, url: str, content_format: str | None, max_chars: int
         language=language,
         truncated=True if truncated else None,
         total_chars=total_chars if truncated else None,
+        structured_data=structured or None,
+        recipe=recipe,
     )
 
 

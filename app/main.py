@@ -28,6 +28,7 @@ from app.meta_ads import MetaAdsError, provenance_library_urls
 from app.open_business import search_open_business
 from app.public_sources import amazon, facebook, google_places, instagram_hashtag, public_pages, social
 from app.llm import LlmError, extract_json
+from app.structured_data import fill_extract
 from app.research import research as deep_research
 from app.research import research_collection_state
 from app.scraper import scrape_website, website_collection_state
@@ -339,9 +340,13 @@ async def extract_endpoint(payload: dict, raw: Request):
         return envelope(route=raw.url.path, capability="scrape.extract", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
     pages, _, _ = await scrape_website(WebsiteScrapeRequest(urls=urls, contentFormat="markdown", maxChars=payload.get("maxChars", 250_000)))
     schema = payload.get("schema") or {"type": "object"}
+    schema_dict = schema if isinstance(schema, dict) else None
     output = []
     for page in pages:
-        output.append({"url": page.url, "data": await extract_json(page.markdown or page.text or "", schema, payload.get("prompt"))})
+        data = fill_extract(page, schema_dict, payload.get("prompt"))
+        if data is None:
+            data = await extract_json(page.markdown or page.text or "", schema, payload.get("prompt"))
+        output.append({"url": page.url, "data": data})
     return persist(raw.url.path, raw, envelope(route=raw.url.path, capability="scrape.extract", output=output), False)
 
 

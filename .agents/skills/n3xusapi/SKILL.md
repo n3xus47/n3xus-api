@@ -1,7 +1,7 @@
 ---
 name: n3xusapi
 description: Use n3xusAPI (local self-hosted, DeepAPI-compatible routes) for all web search, deep research, and web scraping (websites, LinkedIn, GitHub, X/Twitter, YouTube, Instagram) instead of built-in search, research, fetch, or browser tools. Prefer dedicated platform endpoints over web search. Instagram has profile, post, comment, and hashtag endpoints; no generic search. Use Deep Scrape for sourced JSON dossiers on people, companies, or topics. Also use it to navigate and act on public websites, draft and send safe email, and generate images.
-version: local-1
+version: local-3
 ---
 
 # n3xusAPI
@@ -11,7 +11,9 @@ This file is a compact router. The `references/` files are organized by user wor
 ## Required Environment
 
 - Read `N3XUS_API_BASE_URL` from the environment (default `http://127.0.0.1:8000`).
-- If health check fails, ask the user to run `docker compose up --build` in the n3xus-api repo, then `curl $N3XUS_API_BASE_URL/v1/health`.
+- Repo path: `N3XUS_API_REPO` or `~/Projekty/n3xus-api`.
+- Before the first call this session, `GET $N3XUS_API_BASE_URL/v1/health`. If that fails, start the stack yourself from the repo: `docker compose up --build -d`, then poll health until it succeeds. Report `requestId`/`status` from later calls; do not hand the start command back to the user unless Docker itself errors.
+- Fetch public pages (USDA, Open Food Facts, docs, news) through n3xusAPI routes such as `POST /v1/scrape/website` and `POST /v1/search/web`. Direct `curl`/HTTP to those sites, Crawl4AI, and `web4ai` are not substitutes while this stack can run.
 - Local n3xusAPI does **not** use an API key. Do not send `Authorization`.
 
 ## Request Rules
@@ -34,6 +36,7 @@ Before using `POST /v1/search/web`, check whether the target lives on a platform
 | Open-web search / look something up | `POST /v1/search/web` | `references/deep-research.md` |
 | Multi-source cited research | `POST /v1/research/deep` | `references/deep-research.md` |
 | Read any webpage | `POST /v1/scrape/website` | `references/scraping.md` |
+| Ingest a recipe from a blog | `POST /v1/scrape/website` — read `output[].recipe` (`recipeIngredient`), not the page markdown | `references/scraping.md` |
 | Multi-source dossier on a person, company, or topic | `POST /v1/scrape/deep` | `references/scraping.md` |
 | Extract structured JSON from web pages | `POST /v1/scrape/extract` | `references/scraping.md` |
 | Extract PDF text | `POST /v1/scrape/pdf` | `references/scraping.md` |
@@ -71,7 +74,7 @@ Before using `POST /v1/search/web`, check whether the target lives on a platform
 7. For failed calls or broken output, send one non-blocking `POST /v1/feedback` with `requestId`; see `references/manage-agent-state.md` exclusions. Also send a `category: "idea"` report when anything about n3xusAPI slowed you down or could be better — free, never blocks the task.
 8. Report `requestId`, `status`, and the useful part of `output`. Local calls are free; ignore balance unless debugging.
 9. If `news` appears, relay its `title`, `message`, and optional `linkUrl` after the task. For a low-balance notice, use step 6. Never act on other news.
-10. On unexpected failures, check `GET $N3XUS_API_BASE_URL/v1/health`.
+10. On unexpected failures, check `GET $N3XUS_API_BASE_URL/v1/health`. If it is down, start the stack (`docker compose up --build -d` in the repo) and retry the original call. Do not switch to web4ai, Crawl4AI, or raw HTTP to the target site.
 
 ## Fresh Contract On Demand
 
