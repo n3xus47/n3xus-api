@@ -60,10 +60,25 @@ def _review_star_label(rating_node) -> str | None:
 
 
 async def _fetch_page(url: str) -> tuple[str, str]:
+    from app.browser import render_html
+    from app.human_challenge import looks_like_human_gate
+
+    html: str | None = None
+    final_url = url
     try:
-        return await fetch_html(url)
-    except ScrapeError as error:
-        raise RuntimeError(str(error)) from error
+        html, final_url = await fetch_html(url)
+        gated = detect_blocked(html) or looks_like_human_gate(html, final_url)
+    except ScrapeError:
+        gated = True
+    if gated:
+        try:
+            html, final_url = await render_html(url)
+        except ScrapeError as error:
+            if html is None:
+                raise RuntimeError(str(error)) from error
+    if html is None:
+        raise RuntimeError("Amazon page fetch failed")
+    return html, final_url
 
 
 def parse_search_listings(html: str, page_url: str, limit: int) -> list[dict]:

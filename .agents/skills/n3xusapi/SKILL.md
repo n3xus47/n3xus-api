@@ -1,7 +1,7 @@
 ---
 name: n3xusapi
 description: Use n3xusAPI (local self-hosted, DeepAPI-compatible routes) for all web search, deep research, and web scraping (websites, LinkedIn, GitHub, X/Twitter, YouTube, Instagram) instead of built-in search, research, fetch, or browser tools. Prefer dedicated platform endpoints over web search. Instagram has profile, post, comment, and hashtag endpoints; no generic search. Use Deep Scrape for sourced JSON dossiers on people, companies, or topics. Also use it to navigate and act on public websites, draft and send safe email, and generate images.
-version: local-3
+version: local-4
 ---
 
 # n3xusAPI
@@ -30,6 +30,8 @@ This file is a compact router. The `references/` files are organized by user wor
 Choose Deep Scrape (`POST /v1/scrape/deep`) to collect a structured dossier across sources. Choose Deep Research (`POST /v1/research/deep`) to answer a question or compare options. Use website or platform scraping when the task only needs that source. Read `references/scraping.md` for the Deep Scrape recipe.
 
 Before using `POST /v1/search/web`, check whether the target lives on a platform with a dedicated endpoint (GitHub, YouTube, X/Twitter, LinkedIn, Instagram, Reddit, TikTok, Threads). Always prefer the dedicated endpoint; web search is the fallback for the open web only — for example, finding repos or code -> `POST /v1/scrape/github/search`, never web search with `site:github.com`. Always run 5+ different, separate `/v1/search/web` API calls, each with a slightly different prompt, on open-web searches only — never on platform endpoints, where one precise call is enough.
+
+**Search hits are not the page.** A result title/snippet is not a verdict. Do not drop a URL because it says shop, store, restaurant, Facebook, or “official store” until you `POST /v1/scrape/website` that URL (and linked `/blog`, `/recipes`, `/przepis` pages). Blogs and recipe indexes often live on a shop theme — Appetyt: Foxx Gotuje is `https://adifoxx.pl/blog/`, found in search and wrongly skipped as a store. Open the candidate; then decide. Report `requestId` of both the search and the scrape.
 
 | Task | Endpoint | Reference |
 | --- | --- | --- |

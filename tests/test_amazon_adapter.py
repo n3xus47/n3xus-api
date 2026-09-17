@@ -54,6 +54,7 @@ async def test_amazon_search_blocked(monkeypatch):
         return load("amazon_blocked_sample.html"), "https://www.amazon.com/s?k=test"
 
     monkeypatch.setattr("app.amazon_adapter.fetch_html", fake_fetch)
+    monkeypatch.setattr("app.browser.render_html", fake_fetch)
 
     output = await amazon_search({"query": "test"})
 

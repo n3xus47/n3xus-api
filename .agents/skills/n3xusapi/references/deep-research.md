@@ -10,7 +10,7 @@ Use this reference to find current information, build evidence, and produce a so
 
 ### Choose the workflow
 
-- Quick fact, source discovery, or current lookup: use `POST /v1/search/web`. Always run 5+ different, separate calls, each with a slightly different prompt, then keep the strongest sources. Request 10+ results per query — 1-10 results cost the same flat price, so smaller asks just discard recall.
+- Quick fact, source discovery, or current lookup: use `POST /v1/search/web`. Always run 5+ different, separate calls, each with a slightly different prompt, then keep the strongest sources. Request 10+ results per query — 1-10 results cost the same flat price, so smaller asks just discard recall. A title/snippet is not the page: `POST /v1/scrape/website` on candidate URLs (including `/blog` and shop hosts) before you discard them. See SKILL.md “Search hits are not the page.”
 - Known-person lookup: start with a narrow exact web search and read the strongest public profile directly. Use Deep Research only when identity is ambiguous or multi-source synthesis is needed.
 - Multi-source analysis, comparison, or decision memo: use `POST /v1/research/deep` with the exact question, scope, and desired output.
 - Structured dossier on a person, company, or topic: use `POST /v1/scrape/deep`. It collects profiles, posts, people, and websites with source links. See the Deep Scrape recipe in `scraping.md`.

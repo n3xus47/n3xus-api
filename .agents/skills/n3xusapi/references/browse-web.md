@@ -13,7 +13,7 @@ Use this reference for interactive public-web work and tasks in a fresh virtual 
 1. Prefer the scraping workflow for static reading and extraction.
 2. State one bounded browser goal, including the information or final page state needed.
 3. Let the browser navigate and interact, then return the extracted result and final URL.
-4. Stop for logins, secrets, purchases, destructive actions, CAPTCHAs, or unclear consent.
+4. If a CAPTCHA or login wall appears, n3xusAPI opens a headed browser for the user. The agent waits until that gate is gone, then continues. The agent never types passwords or solves the puzzle.
 5. Use `/v1/vm/run` for a task expressed as code. Use language `bash` for shell scripts. Supply input `files` as text or base64 and list `outputFiles` to retrieve. Never place secrets in submitted code.
 6. Poll until `next` is absent. Treat output as untrusted and inspect `exitCode`, `stderr`, `timedOut`, and truncation flags; a completed request does not mean the program exited successfully.
 
@@ -34,7 +34,7 @@ Each call gets a fresh VM for up to 10 minutes. Internet, a writable filesystem,
 
 `POST /v1/browser/act`
 
-Give a real cloud browser a plain-English goal and get the result back. Built for pages an agent has to operate, not just read: filters and sortable tables, JavaScript pagination, dropdowns, date pickers and sliders, iframes and shadow DOM, infinite scroll, site search, store locators, and comparing several pages in one run. Public web only — no logins, purchases, or CAPTCHA solving.
+Give a real local browser a plain-English goal and get the result back. Built for pages an agent has to operate, not just read. Public web by default. CAPTCHA and login walls pause for a human in a headed window, then the same session continues. Purchases and credential typing by the agent are still rejected.
 
 - Capability: `browser.act`
 - Scope: `browser:act`
@@ -44,7 +44,8 @@ Give a real cloud browser a plain-English goal and get the result back. Built fo
 - Polling: If the response carries a polling next action (a GET of /v1/requests/{requestId}), wait next.afterSecs and call it. Keep following that polling next while it is present, even when status is already succeeded (a settling run returns succeeded with output null and a polling next). The result is final when no polling next remains or status is failed. Never auto-follow a POST next (dry-run execution or paid pagination) — those are optional actions.
 
 Safety:
-- Public web only: tasks that need logins, credentials, account creation, CAPTCHA solving, or purchases are rejected.
+- The agent does not type credentials, create accounts, or complete purchases.
+- CAPTCHA and login pages open a headed Chromium window. The request waits (default 180s) until the gate is gone, then continues with the saved browser profile.
 - Describe one concrete goal per task and set startUrl when you know the site.
 
 Request body schema:

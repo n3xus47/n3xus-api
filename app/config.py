@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     search_variant_limit: int = 5
     request_timeout_secs: float = 25
     browser_fallback: bool = True
+    human_challenge: bool = True
+    human_challenge_timeout_secs: float = 180
     user_agent: str = "n3xusAPI/0.2 (+local self-hosted API)"
     data_dir: str = "data"
     api_key: str | None = None

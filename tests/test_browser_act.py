@@ -40,22 +40,25 @@ async def test_act_returns_plan_and_execute_trace(monkeypatch):
 
     page = AsyncMock()
     page.url = "https://example.com"
+    page.content = AsyncMock(return_value="<html><body><p>Example Domain</p></body></html>")
+    page.goto = AsyncMock()
+    page.wait_for_timeout = AsyncMock()
     body = MagicMock()
     body.inner_text = AsyncMock(return_value="Example Domain")
     page.locator = MagicMock(return_value=body)
     page.mouse.wheel = AsyncMock()
-    page.wait_for_timeout = AsyncMock()
 
-    browser = AsyncMock()
-    browser.new_page = AsyncMock(return_value=page)
-    browser.close = AsyncMock()
+    context = AsyncMock()
+    context.pages = [page]
+    context.close = AsyncMock()
 
     playwright = MagicMock()
-    playwright.chromium.launch = AsyncMock(return_value=browser)
+    playwright.chromium.launch_persistent_context = AsyncMock(return_value=context)
     playwright.__aenter__ = AsyncMock(return_value=playwright)
     playwright.__aexit__ = AsyncMock(return_value=None)
 
     monkeypatch.setattr("app.browser_act.async_playwright", lambda: playwright)
+    monkeypatch.setattr("app.browser_act.open_persistent_page", AsyncMock(return_value=(context, page)))
 
     result = await act("Read the page", "https://example.com")
     assert result["isSuccess"] is True
@@ -88,17 +91,70 @@ async def test_act_attaches_trace_when_safety_blocks(monkeypatch):
         return target
 
     page.locator = locator
+    page.content = AsyncMock(return_value="<html><body><p>Example</p></body></html>")
+    page.goto = AsyncMock()
+    page.wait_for_timeout = AsyncMock()
 
-    browser = AsyncMock()
-    browser.new_page = AsyncMock(return_value=page)
-    browser.close = AsyncMock()
+    context = AsyncMock()
+    context.pages = [page]
+    context.close = AsyncMock()
     playwright = MagicMock()
-    playwright.chromium.launch = AsyncMock(return_value=browser)
+    playwright.chromium.launch_persistent_context = AsyncMock(return_value=context)
     playwright.__aenter__ = AsyncMock(return_value=playwright)
     playwright.__aexit__ = AsyncMock(return_value=None)
     monkeypatch.setattr("app.browser_act.async_playwright", lambda: playwright)
+    monkeypatch.setattr("app.browser_act.open_persistent_page", AsyncMock(return_value=(context, page)))
 
     with pytest.raises(BrowserTaskError) as error:
         await act("Submit the form", "https://example.com")
     assert error.value.trace[-1]["outcome"] == "blocked"
     assert error.value.trace[0]["phase"] == "plan"
+
+
+async def test_act_waits_for_human_then_continues(monkeypatch):
+    async def fake_generate(_prompt, json_mode=False):
+        return json.dumps({"action": "done", "answer": "Visible after login"})
+
+    monkeypatch.setattr("app.browser_act.generate", fake_generate)
+    monkeypatch.setattr("app.browser_act.assert_public_url", AsyncMock())
+    monkeypatch.setattr("app.browser_act.settings.human_challenge", True)
+
+    captcha = AsyncMock()
+    captcha.url = "https://example.com/login"
+    captcha.content = AsyncMock(return_value="<html><body>Just a moment...</body></html>")
+    captcha.wait_for_timeout = AsyncMock()
+
+    ready = AsyncMock()
+    ready.url = "https://example.com/app"
+    ready.content = AsyncMock(return_value="<html><body><p>Dashboard</p></body></html>")
+    ready.wait_for_timeout = AsyncMock()
+    body = MagicMock()
+    body.inner_text = AsyncMock(return_value="Dashboard")
+    ready.locator = MagicMock(return_value=body)
+
+    captcha_ctx = AsyncMock()
+    captcha_ctx.close = AsyncMock()
+    ready_ctx = AsyncMock()
+    ready_ctx.close = AsyncMock()
+    opens = [(captcha_ctx, captcha), (ready_ctx, ready)]
+
+    async def fake_open(_playwright, _url, *, headless):
+        return opens.pop(0)
+
+    async def fake_wait(page, *, timeout_secs):
+        assert page is ready
+        assert timeout_secs > 0
+        return "<html><body><p>Dashboard</p></body></html>"
+
+    playwright = MagicMock()
+    playwright.__aenter__ = AsyncMock(return_value=playwright)
+    playwright.__aexit__ = AsyncMock(return_value=None)
+    monkeypatch.setattr("app.browser_act.async_playwright", lambda: playwright)
+    monkeypatch.setattr("app.browser_act.open_persistent_page", fake_open)
+    monkeypatch.setattr("app.browser_act.wait_until_cleared", fake_wait)
+
+    result = await act("Read the dashboard", "https://example.com/login")
+    assert result["isSuccess"] is True
+    assert result["result"] == "Visible after login"
+    assert opens == []
+
