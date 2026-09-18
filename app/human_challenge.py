@@ -1,7 +1,8 @@
-"""Human-in-the-loop CAPTCHA and login handoff.
+"""Human-in-the-loop CAPTCHA and login detection.
 
-The API never fills credentials or solves puzzles. It opens a headed browser,
-waits until the gate page is gone, then continues with that session.
+The API never fills credentials or solves puzzles. The short-lived fallback
+opens a headed browser and waits for the gate to clear; explicit, reusable
+operator sessions live in :mod:`app.browser_session`.
 """
 from __future__ import annotations
 

@@ -9,6 +9,7 @@ class StrictModel(BaseModel):
 
 class WebsiteScrapeRequest(StrictModel):
     urls: str | list[str]
+    browser_session_id: str | None = Field(default=None, alias="browserSessionId")
     max_items: int | None = Field(default=None, ge=1, alias="maxItems")
     max_pages: int | None = Field(default=None, ge=1, alias="maxPages")
     max_depth: int | None = Field(default=None, ge=0, alias="maxDepth")

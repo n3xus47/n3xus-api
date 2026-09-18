@@ -9,12 +9,20 @@ from app.human_challenge import (
     open_persistent_page,
     wait_until_cleared,
 )
+from app.browser_session import BrowserSessionError, BrowserSessionNotReady, browser_sessions
 from app.scraper import FetchFailure, ScrapeError, assert_public_url
 
 
-async def render_html(url: str) -> tuple[str, str]:
+async def render_html(url: str, *, session_id: str | None = None) -> tuple[str, str]:
     """Render a public page when httpx is blocked or returned too little extractable content."""
     await assert_public_url(url)
+    if session_id:
+        try:
+            return await browser_sessions.render(session_id, url)
+        except BrowserSessionNotReady as error:
+            raise FetchFailure("session_not_ready", str(error)) from error
+        except BrowserSessionError as error:
+            raise FetchFailure(error.code, str(error)) from error
     try:
         async with PROFILE_LOCK:
             async with async_playwright() as playwright:

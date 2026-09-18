@@ -288,33 +288,48 @@ class PageLoadResult(NamedTuple):
     html: str | None
 
 
-async def _browser_render(url: str) -> tuple[str, str, str]:
+async def _browser_render(url: str, session_id: str | None = None) -> tuple[str, str, str]:
     from app.browser import render_html
 
-    html, final_url = await render_html(url)
-    if looks_blocked_html(html, url):
+    if session_id:
+        html, final_url = await render_html(url, session_id=session_id)
+    else:
+        html, final_url = await render_html(url)
+    if looks_blocked_html(html, final_url):
         raise FetchFailure("blocked", "Blocked or challenge page detected")
     return html, final_url, "js_rendered"
 
 
-async def _load_page(url: str, content_format: str | None, max_chars: int) -> PageLoadResult:
+async def _load_page(
+    url: str,
+    content_format: str | None,
+    max_chars: int,
+    browser_session_id: str | None = None,
+) -> PageLoadResult:
     html: str | None = None
     final_url = url
     render_detail: str | None = None
 
-    try:
-        html, final_url = await fetch_html(url)
-    except Exception as error:
-        reason, detail = _failure_reason(error)
-        if not settings.browser_fallback or not should_try_browser_fallback(reason, url):
-            return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
+    if browser_session_id:
         try:
-            html, final_url, render_detail = await _browser_render(url)
-        except Exception as browser_error:
-            browser_reason, browser_detail = _failure_reason(browser_error)
-            return PageLoadResult(
-                None, url, None, _failure_token(browser_reason, browser_detail), None
-            )
+            html, final_url, render_detail = await _browser_render(url, browser_session_id)
+        except Exception as error:
+            reason, detail = _failure_reason(error)
+            return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
+    else:
+        try:
+            html, final_url = await fetch_html(url)
+        except Exception as error:
+            reason, detail = _failure_reason(error)
+            if not settings.browser_fallback or not should_try_browser_fallback(reason, url):
+                return PageLoadResult(None, url, None, _failure_token(reason, detail), None)
+            try:
+                html, final_url, render_detail = await _browser_render(url)
+            except Exception as browser_error:
+                browser_reason, browser_detail = _failure_reason(browser_error)
+                return PageLoadResult(
+                    None, url, None, _failure_token(browser_reason, browser_detail), None
+                )
 
     page = extract_page(html, final_url, content_format, max_chars)
     content = page.markdown or page.text or ""
@@ -385,7 +400,12 @@ async def scrape_website(
             continue
         visited.add(canonical)
 
-        loaded = await _load_page(url, request.content_format, request.max_chars)
+        loaded = await _load_page(
+            url,
+            request.content_format,
+            request.max_chars,
+            request.browser_session_id,
+        )
 
         if loaded.failure:
             if is_seed:

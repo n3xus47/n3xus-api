@@ -14,6 +14,7 @@ Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publiczneg
 - `POST /v1/email/*` — lokalne szkice oraz wysyłka przez własny SMTP po ustawieniu `N3XUS_API_SMTP_URL` i utworzeniu tożsamości. Wyszukiwanie kontaktu sprawdza wyłącznie jawnie opublikowane adresy na stronie firmy; nie zgaduje adresów ani nie używa brokerów danych. `/v1/email/verify` sprawdza tylko składnię (`checkKind: syntax_only`); dostarczalność wymaga zatwierdzonego adaptera (`docs/email-verification-policy.md`).
 - `POST /v1/seo/*` — lokalny ranking i konkurenci oparte na SearxNG; bezpłatne źródła nie publikują wiarygodnych wolumenów i CPC, więc te pola mają wartość `null`.
 - `POST /v1/browser/act` — lokalny Chromium + Ollama dla ograniczonych zadań na publicznej stronie: odczyt, linki, filtry, sortowanie, paginacja i wyszukiwarki. Blokuje logowanie, zakupy, CAPTCHA oraz formularze.
+- `POST /v1/browser/sessions`, `GET/DELETE /v1/browser/sessions/{sessionId}` oraz `POST /v1/browser/sessions/{sessionId}/resume` — jawny handoff do headed Chromium: operator loguje się ręcznie, a późniejszy scrape może użyć tej sesji przez `browserSessionId`.
 - `POST /v1/transcribe/uploads`, `PUT /v1/transcribe/uploads/{uploadId}`, `POST /v1/transcribe` — prywatny upload do 25 MB i lokalny faster-whisper na CPU.
 - `POST /v1/generate/image` — lokalny AUTOMATIC1111/Stable Diffusion po ustawieniu `N3XUS_API_STABLE_DIFFUSION_URL`, np. `http://host.docker.internal:7860`.
 - `POST /v1/vm/run`, `GET /v1/vm/files/{requestId}/{fileIndex}` — jednorazowe kontenery Docker z siecią, limitem 1 CPU, 1 GB RAM i 10 minutami wykonania.
@@ -57,6 +58,28 @@ Gdy dane pochodzą z zewnętrznego publicznego źródła, udane odpowiedzi mogą
 
 Brak bloku `source` oznacza, że provenance nie zostało jeszcze znormalizowane dla tej trasy — **nie uzupełniaj go samodzielnie**. Pusty wynik z `collectionState: empty` to uczciwy stan, nie błąd klienta.
 
+## Sesja operatora przeglądarki
+
+Sesję zaczynasz od otwarcia headed Chromium:
+
+```bash
+curl -X POST http://localhost:8000/v1/browser/sessions \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: browser-session-1' \
+  -d '{"startUrl":"https://example.com/login"}'
+```
+
+Operator kończy logowanie w otwartym oknie. API nie wpisuje haseł, nie klika CAPTCHA i nie zwraca cookies. Po sprawdzeniu `GET /v1/browser/sessions/{sessionId}` można wznowić pobieranie:
+
+```bash
+curl -X POST http://localhost:8000/v1/scrape/website \
+  -H 'Content-Type: application/json' \
+  -H 'Idempotency-Key: scrape-after-login-1' \
+  -d '{"urls":"https://example.com/private-recipe", "contentFormat":"text", "browserSessionId":"local_browser_session_..."}'
+```
+
+Alternatywnie `POST /v1/browser/sessions/{sessionId}/resume` przyjmuje te same pola co website scrape; gdy `urls` nie podasz, użyje bieżącego URL-a sesji. Cookies i local storage są przechowywane lokalnie w `data/browser-sessions/` (lub w `N3XUS_API_DATA_DIR`) i znikają po `DELETE` sesji. Sesja nadal przyjmuje wyłącznie publiczne URL-e; nie rozszerza `browser.act` o akcje logowania, zakupy ani omijanie zabezpieczeń.
+
 ## Uruchomienie
 
 ```bash
@@ -96,4 +119,4 @@ Domyślnie: `http://127.0.0.1:8000`, timeout klienta 120 s na operację sieciow�
 
 ## Granice
 
-API przyjmuje wyłącznie publiczne adresy HTTP(S); blokuje localhost i prywatne sieci, również po przekierowaniu. SearxNG i publiczne źródła mogą ograniczać ruch lub zwracać niepełne wyniki. Adaptery nie omijają logowania, CAPTCHA ani limitów; zablokowane źródło zwraca pustą listę zamiast wymyślonych danych. VM wymaga dostępu API do `/var/run/docker.sock`. To daje kodowi zaufanego lokalnego klienta możliwość przejęcia hosta przez Docker; nie wystawiaj API poza `localhost`. Nie dodawaj kont, cookies ani mechanizmów obchodzenia zabezpieczeń stron bez osobnej decyzji i oceny zgodności z regulaminem źródła.
+API przyjmuje wyłącznie publiczne adresy HTTP(S); blokuje localhost i prywatne sieci, również po przekierowaniu. SearxNG i publiczne źródła mogą ograniczać ruch lub zwracać niepełne wyniki. Adaptery nie omijają logowania, CAPTCHA ani limitów; zablokowane źródło zwraca pustą listę zamiast wymyślonych danych. Jawna sesja operatora jest wyjątkiem tylko dla cookies dostarczonych przez ręczny handoff i tylko po podaniu `browserSessionId`; nie jest mechanizmem automatycznego logowania. VM wymaga dostępu API do `/var/run/docker.sock`. To daje kodowi zaufanego lokalnego klienta możliwość przejęcia hosta przez Docker; nie wystawiaj API poza `localhost`. Nie dodawaj kont, cookies ani mechanizmów obchodzenia zabezpieczeń stron bez osobnej decyzji i oceny zgodności z regulaminem źródła.

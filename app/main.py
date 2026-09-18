@@ -5,6 +5,10 @@ from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 
 from app.capabilities import get_capability, list_capabilities
+from app.browser_session import (
+    BrowserSessionError,
+    browser_sessions,
+)
 from app.config import settings
 from app.image import ImageError, generate_image
 from app.contact import company as enrich_company, find_email, verify_email
@@ -31,7 +35,7 @@ from app.llm import LlmError, extract_json
 from app.structured_data import fill_extract
 from app.research import research as deep_research
 from app.research import research_collection_state
-from app.scraper import scrape_website, website_collection_state
+from app.scraper import FetchFailure, scrape_website, website_collection_state
 from app.search import SearchError, search_web_fused
 from app.seo import competitors as seo_competitors, rank as seo_rank
 from app.seo_adapters import keyword_metrics as seo_keyword_metrics, provenance_name as seo_provenance_name
@@ -191,19 +195,43 @@ async def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/v1/scrape/website", status_code=201)
-async def website(request: WebsiteScrapeRequest, raw: Request):
-    replay = await replay_or_require_key(raw, "/v1/scrape/website", "scrape.website", request.dry_run)
+async def _website_response(request: WebsiteScrapeRequest, raw: Request, route: str):
+    replay = await replay_or_require_key(raw, route, "scrape.website", request.dry_run)
     if replay:
         return replay
     if request.dry_run:
-        return envelope(route="/v1/scrape/website", capability="scrape.website", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
+        return envelope(route=route, capability="scrape.website", status="dry_run", estimate={"maxDebitMicrousd": 0, "basis": "local"})
+    if request.browser_session_id:
+        try:
+            await browser_sessions.require_ready(request.browser_session_id)
+        except BrowserSessionError as error:
+            return failure(route, "scrape.website", error.code, str(error), error.status_code)
     pages, outcomes, crawl_meta = await scrape_website(request)
+    if request.browser_session_id:
+        session_outcome = next(
+            (
+                outcome
+                for outcome in outcomes
+                if outcome.get("status") in {"session_not_ready", "browser_session_not_ready", "browser_session_closed", "browser_session_not_found"}
+            ),
+            None,
+        )
+        if session_outcome:
+            status_code = 404 if session_outcome["status"] == "browser_session_not_found" else 409
+            code = session_outcome["status"]
+            return failure(
+                route,
+                "scrape.website",
+                code,
+                "The browser session is no longer ready; complete the operator handoff and retry.",
+                status_code,
+                output={"urlOutcomes": outcomes},
+            )
     list_meta: dict[str, object] = {"listState": "has_results" if pages else "no_results"}
     if crawl_meta is not None:
         list_meta["crawl"] = crawl_meta
-    return persist("/v1/scrape/website", raw, envelope(
-        route="/v1/scrape/website", capability="scrape.website",
+    return persist(route, raw, envelope(
+        route=route, capability="scrape.website",
         output=[page.model_dump(by_alias=True, exclude_none=True) for page in pages],
         list=list_meta, urlOutcomes=outcomes,
         source=provenance(
@@ -212,6 +240,11 @@ async def website(request: WebsiteScrapeRequest, raw: Request):
             website_collection_state(pages, outcomes or []),
         ),
     ), False)
+
+
+@app.post("/v1/scrape/website", status_code=201)
+async def website(request: WebsiteScrapeRequest, raw: Request):
+    return await _website_response(request, raw, "/v1/scrape/website")
 
 
 @app.post("/v1/search/web")
@@ -563,6 +596,95 @@ async def browser_act_endpoint(payload: dict, raw: Request):
     if not isinstance(task, str) or not isinstance(start_url, str):
         return failure(raw.url.path, "browser.act", "invalid_request", "task and startUrl are required.", 400)
     return await public_source_response(raw.url.path, "browser.act", payload, raw, lambda: browser_act(task, start_url))
+
+
+@app.post("/v1/browser/sessions", status_code=201)
+async def browser_session_create(payload: dict, raw: Request):
+    start_url = payload.get("startUrl")
+    if not isinstance(start_url, str) or not start_url.startswith(("http://", "https://")):
+        return failure(raw.url.path, "browser.session", "invalid_request", "startUrl must be an HTTP(S) URL.", 400)
+    replay = await replay_or_require_key(raw, raw.url.path, "browser.session", payload.get("dryRun", False))
+    if replay:
+        return replay
+    if payload.get("dryRun"):
+        return envelope(
+            route=raw.url.path,
+            capability="browser.session",
+            status="dry_run",
+            estimate={"maxDebitMicrousd": 0, "basis": "local"},
+        )
+    try:
+        output = await browser_sessions.create(start_url)
+    except BrowserSessionError as error:
+        return failure(raw.url.path, "browser.session", error.code, str(error), error.status_code)
+    except FetchFailure as error:
+        status_code = 400 if error.reason == "rejected" else 502
+        return failure(raw.url.path, "browser.session", f"browser_session_{error.reason}", str(error), status_code)
+    return persist(
+        raw.url.path,
+        raw,
+        envelope(route=raw.url.path, capability="browser.session", output=output),
+        False,
+    )
+
+
+@app.get("/v1/browser/sessions/{session_id}")
+async def browser_session_status(session_id: str):
+    try:
+        output = await browser_sessions.get(session_id)
+    except BrowserSessionError as error:
+        return failure(
+            f"/v1/browser/sessions/{session_id}",
+            "browser.session",
+            error.code,
+            str(error),
+            error.status_code,
+        )
+    return envelope(
+        route=f"/v1/browser/sessions/{session_id}",
+        capability="browser.session",
+        output=output,
+    )
+
+
+@app.post("/v1/browser/sessions/{session_id}/resume")
+async def browser_session_resume(session_id: str, payload: dict, raw: Request):
+    replay = await replay_or_require_key(raw, raw.url.path, "scrape.website", payload.get("dryRun", False))
+    if replay:
+        return replay
+    values = dict(payload)
+    if "urls" not in values:
+        if values.get("dryRun"):
+            return failure(raw.url.path, "scrape.website", "invalid_request", "urls is required for a dry run.", 400)
+        try:
+            values["urls"] = (await browser_sessions.get(session_id))["currentUrl"]
+        except BrowserSessionError as error:
+            return failure(raw.url.path, "scrape.website", error.code, str(error), error.status_code)
+    values["browserSessionId"] = session_id
+    try:
+        request = WebsiteScrapeRequest.model_validate(values)
+    except ValueError as error:
+        return failure(raw.url.path, "scrape.website", "invalid_request", str(error), 400)
+    return await _website_response(request, raw, raw.url.path)
+
+
+@app.delete("/v1/browser/sessions/{session_id}")
+async def browser_session_close(session_id: str):
+    try:
+        await browser_sessions.close(session_id)
+    except BrowserSessionError as error:
+        return failure(
+            f"/v1/browser/sessions/{session_id}",
+            "browser.session",
+            error.code,
+            str(error),
+            error.status_code,
+        )
+    return envelope(
+        route=f"/v1/browser/sessions/{session_id}",
+        capability="browser.session",
+        output={"sessionId": session_id, "closed": True},
+    )
 
 
 @app.post("/v1/transcribe/uploads")

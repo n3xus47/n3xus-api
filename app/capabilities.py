@@ -182,8 +182,20 @@ REGISTRY = (
         (
             "Public pages only; bounded to eight safe browser steps.",
             "Returns a plan/execute safe-action trace for audit. CAPTCHA and login walls open a headed browser for the operator; the agent does not type credentials or complete purchases.",
+            "Use browser.session plus scrape.website for an explicit operator handoff when a gated page must be revisited with its cookies.",
         ),
         "browser-act",
+    ),
+    Capability(
+        "browser.session",
+        "experimental",
+        "playwright-operator-handoff",
+        (
+            "An operator must complete login or CAPTCHA in a headed Chromium window; the agent never receives or enters credentials.",
+            "Cookies and local storage stay in the local data directory and are used only when the caller supplies the explicit browserSessionId.",
+            "Sessions accept public HTTP(S) URLs only and do not enable purchases, credential automation, or CAPTCHA solving.",
+        ),
+        "browser-session",
     ),
     Capability(
         "audio.transcribe",
