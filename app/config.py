@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     data_dir: str = "data"
     api_key: str | None = None
     ollama_url: str = "http://ollama:11434"
-    ollama_model: str = "qwen3:8b"
+    ollama_model: str = "qwen3.5:27b"
     smtp_url: str | None = None
     smtp_from: str | None = None
     transcription_model: str = "base"

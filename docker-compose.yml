@@ -5,17 +5,18 @@ services:
       - "127.0.0.1:8000:8000"
     environment:
       N3XUS_API_SEARXNG_URL: http://searxng:8080
+      N3XUS_API_OLLAMA_MODEL: "${N3XUS_API_OLLAMA_MODEL:-qwen3.5:27b}"
       N3XUS_API_VM_HOST_DATA_DIR: ${PWD}/data
       DISPLAY: ${DISPLAY:-:0}
-      XAUTHORITY: /root/.Xauthority
+      XAUTHORITY: "${XAUTHORITY:-/dev/null}"
       LIBGL_ALWAYS_SOFTWARE: "1"
     volumes:
       - ./data:/app/data
       # VM runs are explicitly trusted localhost calls. This grants Docker-host control.
       - /var/run/docker.sock:/var/run/docker.sock
       # Desktop X11 lives in the session /tmp; dockerd has a different /tmp.
-      - /home/n3xus/.n3xus-x11:/tmp/.X11-unix
-      - ${XAUTHORITY}:/root/.Xauthority:ro
+      - "${N3XUS_API_X11_SOCKET_DIR:-/tmp/.X11-unix}:/tmp/.X11-unix"
+      - "${XAUTHORITY:-/dev/null}:/root/.Xauthority:ro"
     shm_size: "1gb"
     depends_on:
       searxng:

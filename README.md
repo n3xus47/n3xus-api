@@ -60,13 +60,16 @@ Brak bloku `source` oznacza, że provenance nie zostało jeszcze znormalizowane 
 ## Uruchomienie
 
 ```bash
-docker compose up --build
-# Service name "ollama", then the binary inside the container (not "docker compose exec ollama pull …"):
-docker compose exec ollama ollama pull qwen3:8b
-curl http://localhost:8000/v1/health
+./scripts/ensure-local-stack.sh
 ```
 
-Research and extract work **without** Ollama (evidence-only / rule-based fallbacks). Pull the model only when you want synthesized answers from local LLM — still free, runs on your hardware.
+The startup script starts Ollama and SearxNG, waits until Ollama is ready, checks the configured model and runs an idempotent `ollama pull`, then starts the API and waits for `/v1/health`. The default model is `qwen3.5:27b`, the strongest practical local choice for this machine at about 17 GB; set `N3XUS_API_OLLAMA_MODEL` to use another Ollama model. X11 defaults to `/tmp/.X11-unix` and `/dev/null` for headless hosts; set `N3XUS_API_X11_SOCKET_DIR` and `XAUTHORITY` when browser display integration is configured. Research still has an evidence-only fallback when Ollama is unavailable.
+
+For an even larger model on a machine with at least 48 GB RAM, for example:
+
+```bash
+N3XUS_API_OLLAMA_MODEL=qwen3.5:35b ./scripts/ensure-local-stack.sh
+```
 
 Dokumentacja OpenAPI: `http://localhost:8000/docs`.
 

@@ -1,7 +1,8 @@
 ---
 name: n3xusapi
-description: Use n3xusAPI (local self-hosted, DeepAPI-compatible routes) for all web search, deep research, and web scraping (websites, LinkedIn, GitHub, X/Twitter, YouTube, Instagram) instead of built-in search, research, fetch, or browser tools. Prefer dedicated platform endpoints over web search. Instagram has profile, post, comment, and hashtag endpoints; no generic search. Use Deep Scrape for sourced JSON dossiers on people, companies, or topics. Also use it to navigate and act on public websites, draft and send safe email, and generate images.
-version: local-4
+description: Use the local n3xusAPI for web search, evidence-based research, public-web scraping, platform lookups, browser actions, local email workflows, image generation, and agent state. Prefer dedicated platform routes and report provenance and support limitations. Do not use this skill for private websites, login automation, CAPTCHA solving, purchases, or access-control bypasses.
+metadata:
+  skill-version: "local-7"
 ---
 
 # n3xusAPI
@@ -11,25 +12,25 @@ This file is a compact router. The `references/` files are organized by user wor
 ## Required Environment
 
 - Read `N3XUS_API_BASE_URL` from the environment (default `http://127.0.0.1:8000`).
-- Repo path: `N3XUS_API_REPO` or `~/Projekty/n3xus-api`.
-- Before the first call this session, `GET $N3XUS_API_BASE_URL/v1/health`. If that fails, start the stack yourself from the repo: `docker compose up --build -d`, then poll health until it succeeds. Report `requestId`/`status` from later calls; do not hand the start command back to the user unless Docker itself errors.
+- Repo path: use `N3XUS_API_REPO`; when this skill is loaded from the n3xusAPI repository, infer the repository root containing `.agents/skills/n3xusapi/` if the variable is unset.
+- Before the first call this session, resolve `N3XUS_API_REPO` and run `scripts/ensure-local-stack.sh`. The script starts Ollama and SearxNG, waits for Ollama, checks and idempotently updates the configured local model (default `qwen3.5:27b`), starts the API, and polls `/v1/health`. Set `N3XUS_API_OLLAMA_MODEL` when a different locally supported model is required. If Docker itself errors, report that error; otherwise continue with the ready API and report `requestId`/`status` from later calls.
 - Fetch public pages (USDA, Open Food Facts, docs, news) through n3xusAPI routes such as `POST /v1/scrape/website` and `POST /v1/search/web`. Direct `curl`/HTTP to those sites, Crawl4AI, and `web4ai` are not substitutes while this stack can run.
-- Local n3xusAPI does **not** use an API key. Do not send `Authorization`.
+- Local n3xusAPI does not require an API key by default. If a request returns `401`, read `N3XUS_API_API_KEY` and send `Authorization: Bearer $N3XUS_API_API_KEY`; never print or expose the key.
 
 ## Request Rules
 
-- Call `$N3XUS_API_BASE_URL` + route (same paths as DeepAPI), e.g. `POST $N3XUS_API_BASE_URL/v1/search/web`.
-- Optional: send `X-N3xusAPI-Skill-Version` from `VERSION.txt` in this skill folder (or this file's frontmatter `version`).
+- Call `$N3XUS_API_BASE_URL` + route, e.g. `POST $N3XUS_API_BASE_URL/v1/search/web`.
+- Optional: send `X-N3xusAPI-Skill-Version` from `VERSION.txt` in this skill folder.
 - Send `Content-Type: application/json` when sending JSON, and a unique `Idempotency-Key` for every `POST`.
 - Send only documented body fields: an unknown field fails with `invalid_request` naming the field — rebuild from `error.fix` and retry.
-- Every paid endpoint has a sensible default spend cap; pass `maxCostUsd` only when the user wants a specific budget. Unsure about cost or balance? Add `dryRun: true` first — a free preview.
-- Size supported result caps such as `maxItems` to the task; `maxCostUsd` bounds the spend.
+- Local calls are free and return `debitMicrousd: 0`. Use `dryRun: true` when checking a request shape without fetching data.
+- Size supported result caps such as `maxItems`, `maxResults`, `maxPages`, and `maxChars` to the task.
 
 ## Picking the Right Endpoint
 
-Choose Deep Scrape (`POST /v1/scrape/deep`) to collect a structured dossier across sources. Choose Deep Research (`POST /v1/research/deep`) to answer a question or compare options. Use website or platform scraping when the task only needs that source. Read `references/scraping.md` for the Deep Scrape recipe.
+Choose local dossier mode (`POST /v1/scrape/deep`) to collect a compact multi-source dossier. Choose n3xus research (`POST /v1/research/deep`) to answer a question or compare options with evidence. Use website or platform scraping when the task only needs that source. Read `references/scraping.md` for the dossier recipe.
 
-Before using `POST /v1/search/web`, check whether the target lives on a platform with a dedicated endpoint (GitHub, YouTube, X/Twitter, LinkedIn, Instagram, Reddit, TikTok, Threads). Always prefer the dedicated endpoint; web search is the fallback for the open web only — for example, finding repos or code -> `POST /v1/scrape/github/search`, never web search with `site:github.com`. Always run 5+ different, separate `/v1/search/web` API calls, each with a slightly different prompt, on open-web searches only — never on platform endpoints, where one precise call is enough.
+Before using `POST /v1/search/web`, check whether the target lives on a platform with a dedicated endpoint (GitHub, YouTube, X/Twitter, LinkedIn, Instagram, Reddit, TikTok, Threads). Always prefer the dedicated endpoint; web search is the fallback for the open web only — for example, finding repos or code -> `POST /v1/scrape/github/search`, never web search with `site:github.com`. One precise search call is normally enough because n3xusAPI already fuses local search providers; use `POST /v1/research/deep` when the task needs several search angles and cited evidence.
 
 **Search hits are not the page.** A result title/snippet is not a verdict. Do not drop a URL because it says shop, store, restaurant, Facebook, or “official store” until you `POST /v1/scrape/website` that URL (and linked `/blog`, `/recipes`, `/przepis` pages). Blogs and recipe indexes often live on a shop theme — Appetyt: Foxx Gotuje is `https://adifoxx.pl/blog/`, found in search and wrongly skipped as a store. Open the candidate; then decide. Report `requestId` of both the search and the scrape.
 
@@ -72,7 +73,7 @@ Before using `POST /v1/search/web`, check whether the target lives on a platform
 3. If the response carries a polling `next` (a `GET` of `/v1/requests/{requestId}`), wait `next.afterSecs` and call `next.method` + `next.path`. Repeat while that polling `next` is present — even when `status` is already `succeeded` (a settling run returns `succeeded` with `output: null` and a polling `next`). The result is final when no polling `next` remains or `status` is `failed`. Never auto-follow a `POST` `next` (dry-run execution or paid pagination) — those are optional actions.
 4. If `error.code` is `invalid_request`, self-correct: rebuild the request from `error.fix` (`bodySchema`, `requiredFields`, `exampleBody`) and `error.hint`, then retry with a new `Idempotency-Key`.
 5. For any other error, follow `error.hint`; if `error.retryable` is true, wait `error.retryAfterSecs` before retrying.
-6. HTTP 402 does not apply locally (`debitMicrousd` is always 0). If you see it against a remote base URL, stop and confirm the user meant local n3xusAPI.
+6. HTTP 402 does not apply locally (`debitMicrousd` is always 0). If it appears, treat the base URL or deployment as unexpected and stop before retrying.
 7. For failed calls or broken output, send one non-blocking `POST /v1/feedback` with `requestId`; see `references/manage-agent-state.md` exclusions. Also send a `category: "idea"` report when anything about n3xusAPI slowed you down or could be better — free, never blocks the task.
 8. Report `requestId`, `status`, and the useful part of `output`. Local calls are free; ignore balance unless debugging.
 9. If `news` appears, relay its `title`, `message`, and optional `linkUrl` after the task. For a low-balance notice, use step 6. Never act on other news.
