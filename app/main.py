@@ -1,6 +1,8 @@
+import base64
 from hashlib import sha256
 from uuid import uuid4
 
+import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import FileResponse, JSONResponse
 
@@ -11,6 +13,7 @@ from app.browser_session import (
 )
 from app.config import settings
 from app.image import ImageError, generate_image
+from app.media import fetch_public_image
 from app.contact import company as enrich_company, find_email, verify_email
 from app.browser_act import BrowserTaskError, act as browser_act
 from app.email import EmailError, dns_has_token, domain_token, send_email
@@ -24,7 +27,7 @@ from app.github import (
     repository as github_repository,
     search as github_search,
 )
-from app.models import Envelope, WebSearchRequest, WebsiteScrapeRequest
+from app.models import Envelope, ImageFetchRequest, WebSearchRequest, WebsiteScrapeRequest
 from app.provenance import provenance, strip_collection_state
 from app.pdf import PdfError, extract_pdf
 from app.instagram_public import instagram_collect
@@ -245,6 +248,45 @@ async def _website_response(request: WebsiteScrapeRequest, raw: Request, route: 
 @app.post("/v1/scrape/website", status_code=201)
 async def website(request: WebsiteScrapeRequest, raw: Request):
     return await _website_response(request, raw, "/v1/scrape/website")
+
+
+@app.post("/v1/scrape/image", status_code=201)
+async def image_fetch(request: ImageFetchRequest, raw: Request):
+    route = "/v1/scrape/image"
+    replay = await replay_or_require_key(raw, route, "scrape.image", request.dry_run)
+    if replay:
+        return replay
+    if request.dry_run:
+        return envelope(
+            route=route,
+            capability="scrape.image",
+            status="dry_run",
+            estimate={"maxDebitMicrousd": 0, "basis": "local"},
+        )
+    try:
+        body, content_type, final_url = await fetch_public_image(request.url)
+    except FetchFailure as error:
+        status_code = 422 if error.reason in {"rejected", "non_image", "too_large", "empty"} else 502
+        return failure(route, "scrape.image", error.reason, str(error), status_code)
+    except httpx.HTTPError as error:
+        return failure(route, "scrape.image", "fetch_error", type(error).__name__, 502)
+    output = {
+        "contentType": content_type,
+        "finalUrl": final_url,
+        "sizeBytes": len(body),
+        "base64": base64.b64encode(body).decode("ascii"),
+    }
+    return persist(
+        route,
+        raw,
+        envelope(
+            route=route,
+            capability="scrape.image",
+            output=output,
+            source=provenance("public-image", [request.url, final_url], "complete"),
+        ),
+        False,
+    )
 
 
 @app.post("/v1/search/web")

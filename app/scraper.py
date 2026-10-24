@@ -191,6 +191,75 @@ def _best_content_html(html: str) -> str:
     return str(best)
 
 
+def _image_url(value: object, base_url: str) -> str | None:
+    if not isinstance(value, str):
+        return None
+    candidate = urljoin(base_url, value.strip())
+    parsed = urlparse(candidate)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return None
+    return urlunparse(parsed)
+
+
+def _image_urls(html: str, base_url: str, structured: list[dict]) -> list[str]:
+    """Expose publisher image metadata without downloading/copying image files."""
+    soup = BeautifulSoup(html, "html.parser")
+    values: list[object] = []
+    for selector in (
+        'meta[property="og:image"]',
+        'meta[property="og:image:url"]',
+        'meta[name="twitter:image"]',
+        'meta[name="twitter:image:src"]',
+        'link[rel="image_src"]',
+    ):
+        for node in soup.select(selector):
+            values.append(node.get("content") or node.get("href"))
+
+    def visit(value: object) -> None:
+        if isinstance(value, dict):
+            types = value.get("@type")
+            if types == "ImageObject" or (isinstance(types, list) and "ImageObject" in types):
+                for key in ("contentUrl", "url", "thumbnailUrl"):
+                    if key in value:
+                        visit(value[key])
+            if "image" in value:
+                visit(value["image"])
+        elif isinstance(value, list):
+            for child in value:
+                visit(child)
+        else:
+            values.append(value)
+
+    visit(structured)
+    image_nodes = soup.select("article img, main img, [role='main'] img, img")
+    for node in image_nodes:
+        for attribute in ("src", "data-src", "data-lazy-src"):
+            if node.get(attribute):
+                values.append(node.get(attribute))
+                break
+        if node.get("srcset"):
+            values.append(node.get("srcset").split(",")[0].strip().split(" ")[0])
+
+    result: list[str] = []
+    for value in values:
+        if isinstance(value, list):
+            for child in value:
+                candidate = _image_url(child, base_url)
+                if candidate and candidate not in result:
+                    result.append(candidate)
+            continue
+        if isinstance(value, dict):
+            for child in (value.get("url"), value.get("contentUrl")):
+                candidate = _image_url(child, base_url)
+                if candidate and candidate not in result:
+                    result.append(candidate)
+            continue
+        candidate = _image_url(value, base_url)
+        if candidate and candidate not in result:
+            result.append(candidate)
+    return result
+
+
 def extract_page(html: str, url: str, content_format: str | None, max_chars: int) -> Page:
     source = BeautifulSoup(html, "html.parser")
     document = Document(html)
@@ -216,6 +285,7 @@ def extract_page(html: str, url: str, content_format: str | None, max_chars: int
         markdown = markdown[:max_chars]
     structured = parse_json_ld(html)
     recipe = recipe_from_page(html, url, title, structured, markdown)
+    image_urls = _image_urls(html, url, structured)
 
     return Page(
         url=url,
@@ -227,6 +297,7 @@ def extract_page(html: str, url: str, content_format: str | None, max_chars: int
         truncated=True if truncated else None,
         total_chars=total_chars if truncated else None,
         structured_data=structured or None,
+        image_urls=image_urls or None,
         recipe=recipe,
     )
 

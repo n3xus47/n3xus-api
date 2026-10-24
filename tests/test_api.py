@@ -99,6 +99,43 @@ async def test_dry_run_does_not_call_scraper(client, monkeypatch):
     assert response.json()["status"] == "dry_run"
 
 
+async def test_image_fetch_uses_envelope_and_returns_base64(client, monkeypatch):
+    async def fake_fetch(_url):
+        return b"fake-image", "image/jpeg", "https://cdn.example/image.jpg"
+
+    monkeypatch.setattr("app.main.fetch_public_image", fake_fetch)
+    response = await client.post(
+        "/v1/scrape/image",
+        headers={"Idempotency-Key": f"image-test-{uuid4()}"},
+        json={"url": "https://cdn.example/image.jpg"},
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "succeeded"
+    assert body["capability"] == "scrape.image"
+    assert body["output"]["contentType"] == "image/jpeg"
+    assert body["output"]["sizeBytes"] == len(b"fake-image")
+    assert body["output"]["base64"] == "ZmFrZS1pbWFnZQ=="
+
+
+async def test_image_fetch_rejects_fetch_failures(client, monkeypatch):
+    async def fake_fetch(_url):
+        from app.scraper import FetchFailure
+
+        raise FetchFailure("too_large", "Image exceeds the 15 MB limit")
+
+    monkeypatch.setattr("app.main.fetch_public_image", fake_fetch)
+    response = await client.post(
+        "/v1/scrape/image",
+        headers={"Idempotency-Key": f"image-too-large-{uuid4()}"},
+        json={"url": "https://cdn.example/large.jpg"},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["error"]["code"] == "too_large"
+
+
 @pytest.mark.parametrize(("path", "payload"), [
     ("/v1/scrape/twitter/search", {"query": "example"}),
     ("/v1/scrape/instagram/profile", {"usernames": ["example"]}),

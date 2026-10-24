@@ -30,6 +30,16 @@ REGISTRY = (
         "website",
     ),
     Capability(
+        "scrape.image",
+        "structured",
+        "public-image-fetch",
+        (
+            "Fetches one public raster image for a local import pipeline.",
+            "Private-network targets, redirects to private networks, unsupported media types and files over 15 MB are rejected.",
+        ),
+        "image",
+    ),
+    Capability(
         "search.web",
         "best_effort",
         "searxng+duckduckgo",

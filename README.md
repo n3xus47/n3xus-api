@@ -1,122 +1,218 @@
 # n3xusAPI
 
-Lokalne API do aktualnego wyszukiwania, badania i pobierania danych z publicznego internetu. Jest niezależne od zewnętrznych platform API.
+## Jak to działa?
 
-## Obecnie obsługiwane
+W skrócie:
 
-- `POST /v1/scrape/website` — ekstrakcja artykułu do Markdown i/lub tekstu, wielostronicowe crawl, limit znaków i fallback Chromium/Playwright dla stron renderowanych JavaScriptem.
-- `POST /v1/search/web` — wyniki SearxNG w zgodnym formacie.
-- `POST /v1/scrape/github/*` — publiczny GitHub API: profile, repozytoria, issues, pull requests, commity, zawartość i wyszukiwanie.
-- `POST /v1/scrape/youtube/*` — transkrypcje, miniatury oraz znormalizowane rekordy wideo z wyszukiwania, wielu kanałów i Shorts (publiczna zakładka `/shorts`, z fallbackiem filtrowania `/videos`). Pola m.in. `id`, `url`, `channelHandle`, `isShort`; provenance w `source`.
-- `POST /v1/scrape/pdf` — tekstowa warstwa publicznych PDF-ów.
-- `POST /v1/scrape/{twitter,instagram,tiktok,facebook,amazon}/*`, `/v1/scrape/threads/posts`, `/v1/scrape/open-business/search` oraz alias `/v1/scrape/google/places` — bezpłatne adaptery do publicznych stron. Amazon zwraca znormalizowane listingi/produkty/recenzje z publicznych stron (US/UK/DE); przy blokadzie CAPTCHA — pusty wynik ze stanem `blocked`, bez surowego tekstu strony. Rekordy open-business pochodzą z OpenStreetMap/Nominatim (nie z Google Places), z jawną atrybucją OSM.
-- `POST /v1/research/deep` i `/v1/scrape/extract` — badanie oparte na źródłach oraz ekstrakcja JSON przez lokalny Ollama.
-- `POST /v1/email/*` — lokalne szkice oraz wysyłka przez własny SMTP po ustawieniu `N3XUS_API_SMTP_URL` i utworzeniu tożsamości. Wyszukiwanie kontaktu sprawdza wyłącznie jawnie opublikowane adresy na stronie firmy; nie zgaduje adresów ani nie używa brokerów danych. `/v1/email/verify` sprawdza tylko składnię (`checkKind: syntax_only`); dostarczalność wymaga zatwierdzonego adaptera (`docs/email-verification-policy.md`).
-- `POST /v1/seo/*` — lokalny ranking i konkurenci oparte na SearxNG; bezpłatne źródła nie publikują wiarygodnych wolumenów i CPC, więc te pola mają wartość `null`.
-- `POST /v1/browser/act` — lokalny Chromium + Ollama dla ograniczonych zadań na publicznej stronie: odczyt, linki, filtry, sortowanie, paginacja i wyszukiwarki. Blokuje logowanie, zakupy, CAPTCHA oraz formularze.
-- `POST /v1/browser/sessions`, `GET/DELETE /v1/browser/sessions/{sessionId}` oraz `POST /v1/browser/sessions/{sessionId}/resume` — jawny handoff do headed Chromium: operator loguje się ręcznie, a późniejszy scrape może użyć tej sesji przez `browserSessionId`.
-- `POST /v1/transcribe/uploads`, `PUT /v1/transcribe/uploads/{uploadId}`, `POST /v1/transcribe` — prywatny upload do 25 MB i lokalny faster-whisper na CPU.
-- `POST /v1/generate/image` — lokalny AUTOMATIC1111/Stable Diffusion po ustawieniu `N3XUS_API_STABLE_DIFFUSION_URL`, np. `http://host.docker.internal:7860`.
-- `POST /v1/vm/run`, `GET /v1/vm/files/{requestId}/{fileIndex}` — jednorazowe kontenery Docker z siecią, limitem 1 CPU, 1 GB RAM i 10 minutami wykonania.
-- Lokalna pamięć: `GET`, `POST`, `DELETE /v1/memory/{path}`.
-- Statusy żądań, idempotencja, `GET /v1/health`, `/v1/me`, `/v1/balance`, `/v1/capabilities`.
-- `dryRun: true` waliduje żądanie bez uruchamiania pracy.
+1. Wysyłasz żądanie HTTP, np. z adresem strony do pobrania albo hasłem do wyszukania.
+2. API wybiera odpowiednią funkcję i pobiera dane z publicznego źródła lub lokalnego narzędzia.
+3. Dostajesz wynik w JSON razem ze statusem. Tam, gdzie to możliwe, odpowiedź podaje też źródło danych.
 
-Odpowiedzi zachowują podstawowy envelope (`requestId`, `route`, `capability`, `status`, `output`, `error`). Każdy niedry-run `POST` wymaga nagłówka `Idempotency-Key`; identyczne wywołanie zwraca zachowany rezultat. Lokalne wywołania są bezpłatne, dlatego `debitMicrousd` wynosi `0`.
-
-## Wyszukiwanie web (self-hosted)
-
-`POST /v1/search/web` uruchamia równolegle warianty zapytania w SearxNG oraz DuckDuckGo przez bibliotekę `ddgs` (w fusion i jako rezerwę, gdy SearxNG zawiedzie). Włączone silniki SearxNG ustawiasz w `searxng/settings.yml` (domyślnie m.in. duckduckgo, bing, startpage; google i brave są wyłączone). Pole `source.name` (`searxng`, `duckduckgo` lub `searxng+duckduckgo`) mówi, skąd przyszły wyniki.
-
-`source.collectionState: complete` — po filtrze trafności jest co najmniej jeden wynik w `output.results`. `empty` — odpowiedź `succeeded`, ale lista wyników jest pusta (SearxNG/DDG bez sensownych linków albo wszystko odrzucone); to nie oznacza błędu transportu. Jakość mierzysz harnesssem: `docs/evals/WORKFLOW.md` (np. `evals/search-agent-realism.json`).
-
-## Poziomy wsparcia
-
-Każda możliwość ma przypisany poziom w rejestrze zwracanym przez `GET /v1/capabilities` (pole `supportLevel`). Opcjonalnie filtruj: `GET /v1/capabilities?capability=scrape.amazon`. Poziomy opisują **jakość kontraktu danych**, a nie sam fakt, że endpoint istnieje.
-
-| Poziom | Znaczenie |
-| --- | --- |
-| `structured` | Normalizowane rekordy z oczekiwanymi polami; adapter jest źródłowo specyficzny (np. GitHub REST, yt-dlp). |
-| `best_effort` | Publiczny fetch strony lub ograniczone API; wynik może być niepełny lub ogólny — **nie traktuj go jak pełnego rekordu produktu, posta czy miejsca Google**. |
-| `experimental` | Lokalny model lub heurystyka (Ollama, browser act); jakość zależy od konfiguracji. |
-| `unavailable` | Celowo nieobsługiwane lokalnie (np. wzbogacanie osoby po e-mail); wywołanie zwraca błąd kontraktu zamiast zgadywać dane. |
-
-Pole `limitations` i `adapter` w tym samym obiekcie wyjaśniają źródło i znane ograniczenia. Pełna mapa luk względem komercyjnych API: `docs/deepapi-parity-audit.md`.
-
-## Pochodzenie danych (`source`)
-
-Gdy dane pochodzą z zewnętrznego publicznego źródła, udane odpowiedzi mogą zawierać blok `source` (na poziomie envelope lub w `output`):
-
-- `name` — identyfikator adaptera (np. `github-public-rest`, `openstreetmap-nominatim`);
-- `urls` — adresy użyte przy pobraniu;
-- `retrievedAt` — znacznik czasu ISO 8601 (UTC);
-- `collectionState` — jak poszło pobranie:
-  - `complete` — zebrano oczekiwane dane;
-  - `partial` — część pól lub stron brakuje;
-  - `blocked` — źródło odmówiło dostępu (limit, CAPTCHA, polityka);
-  - `empty` — legalny brak wyników (np. puste wyszukiwanie).
-
-Brak bloku `source` oznacza, że provenance nie zostało jeszcze znormalizowane dla tej trasy — **nie uzupełniaj go samodzielnie**. Pusty wynik z `collectionState: empty` to uczciwy stan, nie błąd klienta.
-
-## Sesja operatora przeglądarki
-
-Sesję zaczynasz od otwarcia headed Chromium:
-
-```bash
-curl -X POST http://localhost:8000/v1/browser/sessions \
-  -H 'Content-Type: application/json' \
-  -H 'Idempotency-Key: browser-session-1' \
-  -d '{"startUrl":"https://example.com/login"}'
+```text
+Twoja aplikacja  →  n3xusAPI  →  źródło danych  →  odpowiedź JSON
 ```
-
-Operator kończy logowanie w otwartym oknie. API nie wpisuje haseł, nie klika CAPTCHA i nie zwraca cookies. Po sprawdzeniu `GET /v1/browser/sessions/{sessionId}` można wznowić pobieranie:
-
-```bash
-curl -X POST http://localhost:8000/v1/scrape/website \
-  -H 'Content-Type: application/json' \
-  -H 'Idempotency-Key: scrape-after-login-1' \
-  -d '{"urls":"https://example.com/private-recipe", "contentFormat":"text", "browserSessionId":"local_browser_session_..."}'
-```
-
-Alternatywnie `POST /v1/browser/sessions/{sessionId}/resume` przyjmuje te same pola co website scrape; gdy `urls` nie podasz, użyje bieżącego URL-a sesji. Cookies i local storage są przechowywane lokalnie w `data/browser-sessions/` (lub w `N3XUS_API_DATA_DIR`) i znikają po `DELETE` sesji. Sesja nadal przyjmuje wyłącznie publiczne URL-e; nie rozszerza `browser.act` o akcje logowania, zakupy ani omijanie zabezpieczeń.
 
 ## Uruchomienie
 
+Potrzebujesz Dockera. W terminalu wykonaj:
+
 ```bash
+git clone https://github.com/n3xus47/n3xus-api.git
+cd n3xus-api
 ./scripts/ensure-local-stack.sh
 ```
 
-The startup script starts Ollama and SearxNG, waits until Ollama is ready, checks the configured model and runs an idempotent `ollama pull`, then starts the API and waits for `/v1/health`. The default model is `qwen3.5:27b`, the strongest practical local choice for this machine at about 17 GB; set `N3XUS_API_OLLAMA_MODEL` to use another Ollama model. X11 defaults to `/tmp/.X11-unix` and `/dev/null` for headless hosts; set `N3XUS_API_X11_SOCKET_DIR` and `XAUTHORITY` when browser display integration is configured. Research still has an evidence-only fallback when Ollama is unavailable.
-
-For an even larger model on a machine with at least 48 GB RAM, for example:
+Przy pierwszym uruchomieniu Docker pobierze potrzebne obrazy i duży model Ollama, więc może to chwilę potrwać. Gdy API będzie gotowe, sprawdź je:
 
 ```bash
-N3XUS_API_OLLAMA_MODEL=qwen3.5:35b ./scripts/ensure-local-stack.sh
+curl http://localhost:8000/v1/health
 ```
 
-Dokumentacja OpenAPI: `http://localhost:8000/docs`.
+## Pierwsze żądanie
 
-Przykład:
+Poniższy przykład wyszukuje strony dla podanego hasła:
 
 ```bash
-curl -X POST http://localhost:8000/v1/scrape/website \
+curl -X POST http://localhost:8000/v1/search/web \
   -H 'Content-Type: application/json' \
-  -d '{"urls":"https://example.com","contentFormat":"markdown"}'
+  -H 'Idempotency-Key: moje-pierwsze-wyszukiwanie' \
+  -d '{"query":"FastAPI","maxResults":5}'
 ```
 
-## Ewaluacja jakości danych
+API zwróci JSON z wynikami wyszukiwania. Pole `output` zawiera dane, a `status` mówi, czy operacja się powiodła. W odpowiedziach ze źródeł internetowych może pojawić się też informacja, skąd i kiedy pobrano dane.
 
-Reprodukowalny harness mierzy obecność wymaganych pól, latencję i powody niepowodzeń na **legalnych, publicznych** celach — bez sekretów i credentials.
+Dokumentacja uruchomionego API: [Swagger UI](http://localhost:8000/docs) i [ReDoc](http://localhost:8000/redoc). Szczegółowy opis tras znajduje się w [referencji API](docs/api-reference.md).
+
+## Szczegóły
+
+**n3xusAPI** to lokalne, samodzielnie hostowane API do wyszukiwania, pobierania i przetwarzania publicznych danych z internetu. Korzysta z adapterów źródłowych i lokalnych narzędzi, takich jak Ollama, Chromium, SQLite, faster-whisper i Docker.
+
+### Co potrafi
+
+- Pobiera treść publicznych stron jako tekst lub Markdown, może odwiedzać powiązane strony w ograniczonym zakresie i wyodrębnia metadane oraz obrazy.
+- Wyszukuje w sieci za pomocą lokalnego SearxNG i DuckDuckGo, a następnie usuwa duplikaty i szereguje wyniki.
+- Pobiera publiczne dane z GitHuba i YouTube przez adaptery dostosowane do tych źródeł oraz wyodrębnia tekst z publicznych plików PDF.
+- Prowadzi badania oparte na źródłach i ekstrakcję zgodną ze schematem; opcjonalnie korzysta z lokalnego Ollama.
+- Udostępnia adaptery stron publicznych dla serwisów społecznościowych, Amazona i otwartych katalogów firm. Każda możliwość podaje adapter i znane ograniczenia.
+- Oferuje zadania w przeglądarce, ręcznie obsługiwane sesje przeglądarki, transkrypcję audio, generowanie obrazów i jednorazowe zadania w Dockerze.
+- Zapisuje żądania, wyniki idempotentne, pliki pamięci i szkice/wiadomości e-mail w lokalnej bazie SQLite.
+
+## Możliwości i poziomy wsparcia
+
+`GET /v1/capabilities` zwraca aktualny rejestr możliwości. Można go filtrować, np. `GET /v1/capabilities?capability=scrape.github`. Każdy wpis zawiera `supportLevel`, `adapter`, `limitations` oraz, jeśli jest dostępne, `evaluationSuite`.
+
+| Poziom wsparcia | Znaczenie |
+| --- | --- |
+| `structured` | Adapter zwraca znormalizowane rekordy specyficzne dla źródła. Źródło nadal może nie zwrócić części danych lub zablokować dostęp. |
+| `best_effort` | Wynik pochodzi z publicznej strony lub ograniczonego interfejsu źródła i może być niepełny albo ogólny. |
+| `experimental` | Wynik zależy od lokalnego modelu, planowania działań przeglądarki lub heurystyki ekstrakcji. |
+| `unavailable` | Funkcja nie jest lokalnie zaimplementowana; API nie wymyśla brakujących danych. |
+
+Poziom opisuje jakość kontraktu danych, a nie samo istnienie trasy. Przed użyciem wyniku sprawdź `limitations` danej możliwości. Na przykład trasa `scrape.google` jest aliasem zgodności obsługiwanym przez OpenStreetMap Nominatim — **nie zwraca danych Google Places**. Pełna analiza braków znajduje się w [audycie zgodności](docs/deepapi-parity-audit.md).
+
+## Pochodzenie danych i stany pobierania
+
+Udane odpowiedzi korzystające ze źródeł zewnętrznych mogą zawierać obiekt `source`. Podaje on adapter (`name`), użyte lub pobrane adresy URL (`urls`), czas pobrania (`retrievedAt`, UTC, ISO 8601) oraz `collectionState`:
+
+| Stan | Znaczenie |
+| --- | --- |
+| `complete` | Adapter zebrał oczekiwane dane dla tego żądania. |
+| `partial` | Nie udało się zebrać części oczekiwanych pól, stron lub materiałów źródłowych. |
+| `blocked` | Źródło odmówiło dostępu, np. z powodu limitu lub CAPTCHA. |
+| `empty` | Żądanie zakończyło się poprawnie, ale nie znaleziono pasujących rekordów. |
+
+Pusty wynik ze stanem `status: "succeeded"` i `collectionState: "empty"` jest prawidłowym rezultatem, a nie błędem transportu. Brak `source` oznacza, że pochodzenie danych nie zostało jeszcze ujednolicone dla tej trasy — klient nie powinien go dopowiadać ani fabrykować.
+
+## Format odpowiedzi, tryb próbny i ponawianie żądań
+
+Większość operacji zwraca wspólny obiekt JSON:
+
+```json
+{
+  "requestId": "local_…",
+  "route": "/v1/search/web",
+  "capability": "search.web",
+  "status": "succeeded",
+  "replayed": false,
+  "costFinal": true,
+  "debitMicrousd": 0,
+  "output": { "results": [] },
+  "source": {
+    "name": "searxng+duckduckgo",
+    "urls": [],
+    "retrievedAt": "2026-01-01T00:00:00+00:00",
+    "collectionState": "empty"
+  }
+}
+```
+
+Dokładny zestaw pól zależy od trasy. Błędy mają `status: "failed"` oraz obiekt `error` z kodem `code`, informacją `retryable` i wskazówką `hint`. Lokalne operacje nie naliczają opłat; udane odpowiedzi podają `debitMicrousd: 0`.
+
+Każde żądanie `POST` obsługujące idempotencję wymaga unikalnego nagłówka `Idempotency-Key`, chyba że ustawiono `dryRun: true`. Powtórzenie tego samego klucza odtwarza zapisany wynik i ustawia `replayed: true`; do nowej operacji użyj nowego klucza. Tryb `dryRun` waliduje żądanie i zwraca `status: "dry_run"` bez uruchamiania pracy. Operacje `PUT`, `GET` i `DELETE` nie korzystają z mechanizmu idempotencji POST.
+
+Jeśli ustawiono `N3XUS_API_API_KEY`, każda trasa poza `/v1/health` wymaga nagłówka `Authorization: Bearer <klucz>`.
+
+## Architektura
+
+```mermaid
+flowchart LR
+  Client[Klient lokalny] --> API[FastAPI]
+  API --> Adapters[Adaptery źródeł]
+  Adapters --> Public[Publiczne źródła internetowe]
+  API --> Searx[SearxNG]
+  API --> Ollama[Ollama]
+  API --> Browser[Playwright / Chromium]
+  API --> Whisper[faster-whisper]
+  API --> SD[Opcjonalny Stable Diffusion]
+  API --> Docker[Opcjonalne zadania Docker]
+  API --> SQLite[(Lokalna baza SQLite i katalog danych)]
+```
+
+API jest przeznaczone dla jednego zaufanego operatora lokalnego. Wykonywanie zadań Docker wymaga podłączenia `/var/run/docker.sock` i przyjmuje wyłącznie połączenia z loopback. Nie udostępniaj usługi niezaufanej sieci. Szczegóły: [limity wykonywania zadań Docker](docs/vm-isolation.md).
+
+## Technologie
+
+- Python 3.12, FastAPI, Pydantic Settings i Uvicorn
+- SQLite do lokalnych żądań, pamięci i stanu poczty e-mail
+- SearxNG i `ddgs` do wyszukiwania; adaptery publicznych źródeł dla GitHuba, YouTube, OpenStreetMap i innych stron
+- Playwright/Chromium do stron renderowanych JavaScriptem i ograniczonych zadań przeglądarki
+- Ollama do opcjonalnego lokalnego tworzenia podsumowań badań i ekstrakcji
+- faster-whisper do lokalnej transkrypcji CPU; opcjonalny serwer generowania obrazów zgodny z AUTOMATIC1111
+- Docker Compose do API i lokalnych usług
+- Pytest i pytest-asyncio do testów Pythona; ustawienia Ruff znajdują się w `pyproject.toml`
+
+## Wymagania i dodatkowe ustawienia uruchomienia
+
+### Wymagania
+
+- Docker Engine z wtyczką Compose
+- `curl` i Bash do uruchomienia skryptu startowego
+- Wystarczająca ilość pamięci i miejsca na skonfigurowany model Ollama. Domyślny `qwen3.5:27b` jest duży; w razie potrzeby wybierz mniejszy model przez `N3XUS_API_OLLAMA_MODEL`.
+
+Aby użyć innego modelu Ollama przy uruchamianiu:
 
 ```bash
-docker compose up --build   # API musi działać na localhost
+N3XUS_API_OLLAMA_MODEL=your-ollama-model ./scripts/ensure-local-stack.sh
+```
+
+Zastąp `your-ollama-model` identyfikatorem modelu dostępnym w Ollama.
+
+Możesz też zarządzać usługami bezpośrednio przez Compose: `docker compose up --build -d` oraz `docker compose down`. Skrypt startowy jest zalecany, jeśli chcesz poczekać na Ollama, upewnić się, że model jest zainstalowany, i sprawdzić gotowość API.
+
+Domyślny zestaw nie wymaga pliku `.env`. Opcjonalne ustawienia są przekazywane przez zmienne `N3XUS_API_*`; szczegóły znajdują się w sekcji [Konfiguracja](#konfiguracja). Nie dodawaj plików `.env` ani danych uwierzytelniających do repozytorium.
+
+## Konfiguracja
+
+Ustawienia można przekazać przez zmienne środowiskowe z prefiksem `N3XUS_API_`. Aplikacja odczytuje również lokalny plik `.env`, jeśli istnieje. Najważniejsze opcjonalne ustawienia:
+
+| Zmienna | Domyślnie | Zastosowanie |
+| --- | --- | --- |
+| `N3XUS_API_API_KEY` | brak | Włącza uwierzytelnianie Bearer; `/v1/health` pozostaje publiczne. |
+| `N3XUS_API_DATA_DIR` | `data` | Katalog lokalnej bazy SQLite i innych danych. |
+| `N3XUS_API_SEARXNG_URL` | `http://searxng:8080` | Adres SearxNG używany w sieci Compose. |
+| `N3XUS_API_SEARCH_DDG_ENABLED` | `true` | Włącza DuckDuckGo jako źródło fuzji lub zapasowe. |
+| `N3XUS_API_OLLAMA_URL` | `http://ollama:11434` | Adres usługi Ollama. |
+| `N3XUS_API_OLLAMA_MODEL` | `qwen3.5:27b` | Lokalny model do badań i ekstrakcji. |
+| `N3XUS_API_SMTP_URL` | brak | Adres serwera SMTP do wysyłki e-maili. |
+| `N3XUS_API_SMTP_FROM` | brak | Domyślny adres nadawcy przy tworzeniu lokalnej tożsamości e-mail. |
+| `N3XUS_API_TRANSCRIPTION_MODEL` | `base` | Nazwa modelu faster-whisper. |
+| `N3XUS_API_TRANSCRIPTION_DEVICE` | `cpu` | Urządzenie transkrypcji; CUDA wymaga zgodnego pakietu. |
+| `N3XUS_API_STABLE_DIFFUSION_URL` | brak | Opcjonalny adres API lokalnej usługi zgodnej z AUTOMATIC1111. |
+| `N3XUS_API_META_ADS_ACCESS_TOKEN` | brak | Opcjonalny token z dostępem do Meta Ads Library API. |
+| `N3XUS_API_VM_HOST_DATA_DIR` | ustawiane przez Compose | Ścieżka hosta montowana dla plików tworzonych przez zadania Docker. |
+
+Zestaw Compose jest skonfigurowany do komunikacji po lokalnej sieci Dockera. Adresy takie jak `http://ollama:11434` są nazwami usług dostępnymi wewnątrz Compose, a nie z terminala hosta. Niektóre opcjonalne integracje wymagają dodatkowych usług lub uprawnień hosta; ich ograniczenia są widoczne w rejestrze możliwości.
+
+## Ewaluacja jakości
+
+Harness ewaluacyjny mierzy pokrycie wymaganych pól, opóźnienie i powody niepowodzeń dla publicznych fixture'ów. Nie potwierdza poprawności faktów i nie podnosi poziomu wsparcia możliwości.
+
+```bash
+docker compose up --build -d
 npm run eval -- --fixtures evals/smoke.json --output docs/evals/latest.md
 ```
 
-Domyślnie: `http://127.0.0.1:8000`, timeout klienta 120 s na operację sieciową. Szczegóły metryk, fixture JSON i interpretacja raportu: `docs/evals/WORKFLOW.md`. Przykładowy raport smoke: `docs/evals/harness-smoke.md`.
+Domyślny adres API to `http://127.0.0.1:8000`. Narzędzie ewaluacyjne używa nowych kluczy idempotencji i oczekuje publicznych celów. Szczegóły opisuje [procedura ewaluacji](docs/evals/WORKFLOW.md); przykładowy raport znajduje się w [raporcie smoke](docs/evals/harness-smoke.md), a przykładowe dane żądań w katalogu [`evals/`](evals/).
 
-**Ważne:** sukces w ewaluacji wymaga `status: succeeded`, wszystkich wymaganych pól **oraz** braku `collectionState` równego `partial`, `blocked` lub `empty`. Raport **nie podnosi** poziomu `supportLevel` — sukces `best_effort` nie oznacza akceptacji jako danych `structured`. Pełny korpus M1 i baseline jakości to osobny krok w backlogu; smoke tylko weryfikuje ścieżkę harnessu.
+## Układ repozytorium
 
-## Granice
+| Ścieżka | Zawartość |
+| --- | --- |
+| `app/` | Trasy FastAPI, kontrakty żądań i odpowiedzi, adaptery oraz usługi lokalne |
+| `docs/api-reference.md` | Opis tras i kontraktów API |
+| `docs/` | Zasady, notatki operacyjne, audyty, migracje bazy i raporty ewaluacji |
+| `evals/` | Fixture'y żądań do publicznych celów oraz metadane lokalnych próbek audio |
+| `tests/` | Testy API, adapterów i kontraktów |
+| `scripts/` | Skrypty uruchomieniowe i pomocnicze |
+| `searxng/settings.yml` | Konfiguracja silników SearxNG |
 
-API przyjmuje wyłącznie publiczne adresy HTTP(S); blokuje localhost i prywatne sieci, również po przekierowaniu. SearxNG i publiczne źródła mogą ograniczać ruch lub zwracać niepełne wyniki. Adaptery nie omijają logowania, CAPTCHA ani limitów; zablokowane źródło zwraca pustą listę zamiast wymyślonych danych. Jawna sesja operatora jest wyjątkiem tylko dla cookies dostarczonych przez ręczny handoff i tylko po podaniu `browserSessionId`; nie jest mechanizmem automatycznego logowania. VM wymaga dostępu API do `/var/run/docker.sock`. To daje kodowi zaufanego lokalnego klienta możliwość przejęcia hosta przez Docker; nie wystawiaj API poza `localhost`. Nie dodawaj kont, cookies ani mechanizmów obchodzenia zabezpieczeń stron bez osobnej decyzji i oceny zgodności z regulaminem źródła.
+## Ograniczenia i bezpieczeństwo
+
+- Trasy pobierające dane z sieci przyjmują publiczne adresy HTTP(S) i odrzucają localhost oraz prywatne adresy sieciowe, również po przekierowaniu.
+- Adaptery nie obchodzą logowania, CAPTCHA, limitów źródeł ani kontroli dostępu. Zablokowane źródło jest raportowane jako zablokowane lub puste; API nie fabrykuje rekordów.
+- Sesje przeglądarki wymagają jawnego przekazania obsługi operatorowi. Operator wykonuje ewentualne logowanie w widocznym Chromium; API nie wpisuje danych logowania ani nie rozwiązuje CAPTCHA. Dane sesji zostają w lokalnym katalogu i są używane tylko po podaniu `browserSessionId`.
+- `browser.act` ogranicza się do odczytu publicznych stron, linków, filtrów, sortowania, paginacji i wyszukiwania. Nie obsługuje logowania ani zakupów.
+- `/v1/vm/run` uruchamia kontener Docker i wymaga dostępu do gniazda Dockera hosta. To gniazdo daje znaczną kontrolę nad hostem; trasa dodatkowo odrzuca klientów spoza loopback. Utrzymuj API dostępne wyłącznie lokalnie.
+- Wysyłka e-mail wymaga skonfigurowanego przez operatora serwera SMTP i lokalnej tożsamości nadawcy. Weryfikacja e-mail sprawdza tylko składnię, a nie dostarczalność do skrzynki. Wyszukiwanie kontaktów zwraca wyłącznie jawnie opublikowane adresy i nigdy ich nie zgaduje.
+
+Więcej informacji zawierają: [zasady weryfikacji e-mail](docs/email-verification-policy.md), [wysyłka e-mail](docs/email-delivery.md) oraz [limity wykonywania zadań Docker](docs/vm-isolation.md).

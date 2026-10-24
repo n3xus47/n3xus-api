@@ -34,6 +34,18 @@ class WebsiteScrapeRequest(StrictModel):
         return [self.urls] if isinstance(self.urls, str) else self.urls
 
 
+class ImageFetchRequest(StrictModel):
+    url: str
+    dry_run: bool = Field(default=False, alias="dryRun")
+
+    @field_validator("url")
+    @classmethod
+    def public_http_url(cls, value: str) -> str:
+        if not value.startswith(("http://", "https://")):
+            raise ValueError("URL must use http or https")
+        return value
+
+
 class WebSearchRequest(StrictModel):
     query: str = Field(min_length=1, max_length=500)
     max_results: int = Field(default=10, ge=1, le=100, alias="maxResults")
@@ -52,6 +64,7 @@ class Page(BaseModel):
     truncated: bool | None = None
     total_chars: int | None = Field(default=None, alias="totalChars")
     structured_data: list[dict] | None = Field(default=None, alias="structuredData")
+    image_urls: list[str] | None = Field(default=None, alias="imageUrls")
     recipe: dict | None = None
 
 
