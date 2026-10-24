@@ -55,6 +55,11 @@ fi
 set -a
 . ./.env
 set +a
+if [[ "$MODE" == "--update" && -z "$MODEL_OVERRIDE" && "${N3XUS_API_OLLAMA_MODEL:-}" == "qwen3.5:27b" ]]; then
+  sed -i 's/^N3XUS_API_OLLAMA_MODEL=.*/N3XUS_API_OLLAMA_MODEL=qwen3.5:4b/' .env
+  N3XUS_API_OLLAMA_MODEL=qwen3.5:4b
+  printf 'Migrated the previous default model from qwen3.5:27b to qwen3.5:4b.\n'
+fi
 MODEL="${MODEL_OVERRIDE:-${N3XUS_API_OLLAMA_MODEL:-qwen3.5:4b}}"
 export N3XUS_API_OLLAMA_MODEL="$MODEL"
 

@@ -12,10 +12,17 @@ class LlmError(Exception):
     pass
 
 
-async def generate(prompt: str, *, json_mode: bool = False) -> str:
+async def generate(
+    prompt: str,
+    *,
+    json_mode: bool = False,
+    num_predict: int | None = None,
+) -> str:
     payload = {"model": settings.ollama_model, "prompt": prompt, "stream": False}
     if json_mode:
         payload["format"] = "json"
+    if num_predict is not None:
+        payload["options"] = {"num_predict": num_predict}
     try:
         async with httpx.AsyncClient(timeout=120) as client:
             response = await client.post(f"{settings.ollama_url.rstrip('/')}/api/generate", json=payload)

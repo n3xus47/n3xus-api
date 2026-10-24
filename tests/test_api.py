@@ -396,6 +396,7 @@ async def test_capabilities_expose_truthful_support_metadata(client):
     assert capabilities["scrape.open-business"]["supportLevel"] == "structured"
     assert capabilities["scrape.amazon"]["supportLevel"] == "structured"
     assert "Structured Amazon" in capabilities["scrape.amazon"]["limitations"][0]
+    assert capabilities["scrape.deep"]["adapter"] == "searxng+duckduckgo-research"
 
 
 async def test_capabilities_filter_returns_one_capability_with_metadata(client):

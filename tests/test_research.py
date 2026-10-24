@@ -8,6 +8,7 @@ from app.research import (
     assess_completeness,
     build_evidence,
     filter_relevant_hits,
+    _has_valid_evidence_citations,
     merge_search_hits,
     merge_search_plan,
     pick_source_urls,
@@ -21,6 +22,12 @@ def test_merge_search_plan_includes_anchor_and_variants():
     assert plan[0] == "What is asyncio?"
     assert "asyncio tutorial" in plan
     assert len(plan) >= 3
+
+
+def test_research_citations_must_reference_evidence_with_content():
+    assert _has_valid_evidence_citations("Asyncio is asynchronous [1].", {1, 3})
+    assert not _has_valid_evidence_citations("Asyncio is asynchronous [2].", {1, 3})
+    assert not _has_valid_evidence_citations("Asyncio is asynchronous.", {1, 3})
 
 
 def test_build_evidence_uses_snippet_when_scrape_empty():
@@ -163,9 +170,10 @@ async def test_research_pipeline_returns_plan_evidence_and_completeness(monkeypa
             {"url": "https://b.example/asyncio", "status": "returned"},
         ], None
 
-    async def fake_generate(prompt, json_mode=False):
+    async def fake_generate(prompt, json_mode=False, num_predict=None):
         if json_mode:
             raise AssertionError("synthesis should not use json mode")
+        assert num_predict == 512
         assert "[1]" in prompt
         return "Asyncio is a concurrency library [1][2]."
 
@@ -203,7 +211,8 @@ async def test_research_partial_when_one_planned_query_search_fails(monkeypatch)
             None,
         )
 
-    async def fake_generate(_prompt, json_mode=False):
+    async def fake_generate(_prompt, json_mode=False, num_predict=None):
+        assert num_predict == 512
         return "Partial answer from one source [1]."
 
     monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
@@ -218,8 +227,8 @@ async def test_research_partial_when_one_planned_query_search_fails(monkeypatch)
 
 
 async def test_research_raw_mode_returns_numbered_evidence_without_llm_synthesis(monkeypatch):
-    async def fake_plan(_query, _context):
-        return ["asyncio python"]
+    async def fail_plan(_query, _context):
+        raise AssertionError("raw mode must not call the local model to plan searches")
 
     async def fake_search(_query, _max):
         return SearchFusionOutcome(
@@ -238,7 +247,7 @@ async def test_research_raw_mode_returns_numbered_evidence_without_llm_synthesis
     async def fail_generate(*_args, **_kwargs):
         raise AssertionError("raw mode must not call LLM synthesis")
 
-    monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
+    monkeypatch.setattr("app.research.plan_search_queries", fail_plan)
     monkeypatch.setattr("app.research.search_web_fused", fake_search)
     monkeypatch.setattr("app.research.scrape_website", fake_scrape)
     monkeypatch.setattr("app.research.generate", fail_generate)
@@ -276,7 +285,8 @@ async def test_research_skips_off_topic_hits_before_scrape(monkeypatch):
             None,
         )
 
-    async def fake_generate(_prompt, json_mode=False):
+    async def fake_generate(_prompt, json_mode=False, num_predict=None):
+        assert num_predict == 512
         assert "gordonramsay.com" in _prompt
         assert "zara-top" not in _prompt.lower()
         return "Several celebrity chefs include Gordon Ramsay [1]."
@@ -290,3 +300,56 @@ async def test_research_skips_off_topic_hits_before_scrape(monkeypatch):
     assert scraped_urls == ["https://www.gordonramsay.com/chefs"]
     assert output["completeness"] == "partial"
     assert len(output["evidence"]) == 1
+
+
+async def test_clean_research_falls_back_to_evidence_when_model_answer_has_no_citations(monkeypatch):
+    async def fake_plan(_query, _context):
+        return ["asyncio python"]
+
+    async def fake_search(_query, _max):
+        return SearchFusionOutcome(
+            [SearchResult(title="Asyncio guide", url="https://a.example/asyncio", snippet="Asyncio runs asynchronous tasks.")],
+            None,
+            ("searxng",),
+        )
+
+    async def fake_scrape(_request):
+        return (
+            [Page(url="https://a.example/asyncio", markdown="# Asyncio\nAsyncio runs asynchronous tasks.", title="Asyncio guide")],
+            [{"url": "https://a.example/asyncio", "status": "returned"}],
+            None,
+        )
+
+    async def fake_generate(_prompt, json_mode=False, num_predict=None):
+        assert num_predict == 512
+        return "```python\napp = FastAPI()\n```"
+
+    monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
+    monkeypatch.setattr("app.research.search_web_fused", fake_search)
+    monkeypatch.setattr("app.research.scrape_website", fake_scrape)
+    monkeypatch.setattr("app.research.generate", fake_generate)
+
+    output = await research("What is asyncio?", None, mode="clean")
+
+    assert "```python" not in output["answer"]
+    assert "https://a.example/asyncio" in output["answer"]
+    assert "Asyncio runs asynchronous tasks." in output["answer"]
+
+
+async def test_clean_research_does_not_synthesize_without_evidence(monkeypatch):
+    async def fake_plan(_query, _context):
+        return ["asyncio python"]
+
+    async def fake_search(_query, _max):
+        return SearchFusionOutcome([], None, ("searxng",))
+
+    async def fail_generate(*_args, **_kwargs):
+        raise AssertionError("clean mode must not synthesize without evidence")
+
+    monkeypatch.setattr("app.research.plan_search_queries", fake_plan)
+    monkeypatch.setattr("app.research.search_web_fused", fake_search)
+    monkeypatch.setattr("app.research.generate", fail_generate)
+
+    output = await research("What is asyncio?", None, mode="clean")
+
+    assert output["answer"] == "No public evidence could be collected for this question with the current search configuration."

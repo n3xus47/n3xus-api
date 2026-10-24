@@ -1,5 +1,6 @@
 import asyncio
 import json
+import re
 from urllib.parse import urlparse
 
 from app.llm import LlmError, generate
@@ -14,6 +15,8 @@ MAX_RESULTS_PER_QUERY = 8
 MAX_SEARCH_PLAN_QUERIES = 6
 MAX_EVIDENCE_EXCERPT_CHARS = 2_500
 RESEARCH_SCRAPE_MAX_CHARS = 40_000
+RESEARCH_CITATION_PATTERN = re.compile(r"\[(\d+)\]")
+NO_EVIDENCE_ANSWER = "No public evidence could be collected for this question with the current search configuration."
 
 
 async def plan_search_queries(query: str, context: str | None) -> list[str]:
@@ -134,6 +137,11 @@ def _page_has_content(page: Page) -> bool:
     return bool(_page_text(page))
 
 
+def _has_valid_evidence_citations(answer: str, available_evidence_indexes: set[int]) -> bool:
+    citations = [int(value) for value in RESEARCH_CITATION_PATTERN.findall(answer)]
+    return bool(citations) and all(citation in available_evidence_indexes for citation in citations)
+
+
 def _collection_state(text: str, status: str) -> str:
     if text and status == "returned":
         return "complete"
@@ -195,7 +203,7 @@ async def research(
     instructions: str | None = None,
     mode: str = "raw",
 ) -> dict:
-    llm_plan = await plan_search_queries(query, context)
+    llm_plan = await plan_search_queries(query, context) if mode != "raw" else []
     search_plan = merge_search_plan(query, llm_plan)
 
     batches = await asyncio.gather(*[_search_batch(item) for item in search_plan])
@@ -227,27 +235,27 @@ async def research(
     numbered = "\n\n".join(
         f"[{item['index']}] {item['url']}\n{item.get('excerpt') or ''}" for item in evidence if item.get("excerpt")
     )
-    if mode == "raw":
-        answer = numbered or "No public evidence could be collected for this question with the current search configuration."
+    if not numbered:
+        answer = NO_EVIDENCE_ANSWER
+    elif mode == "raw":
+        answer = numbered
     else:
         synthesis_prompt = (
-            "Answer the research question using only the numbered evidence below. "
-            "Every factual claim must cite one or more evidence numbers like [1]. "
+            "Write a concise plain-language answer using only the numbered evidence below. "
+            "Cite every factual claim with one or more valid evidence numbers like [1]. "
+            "Do not write code unless the research question explicitly asks for code. "
             "If the evidence is insufficient, say so explicitly and do not invent facts.\n"
             f"Question: {query}\nContext: {context or ''}\n"
             f"Instructions: {instructions or ''}\n\nEvidence:\n{numbered or '(no evidence collected)'}"
         )
         try:
-            answer = await generate(synthesis_prompt)
+            answer = await generate(synthesis_prompt, num_predict=512)
         except LlmError:
-            if not evidence:
-                answer = "No public evidence could be collected for this question with the current search configuration."
-            else:
-                answer = (
-                    "Local LLM is unavailable; summarized evidence only:\n\n"
-                    + numbered
-                    + "\n\nConfigure Ollama and pull the model named in N3XUS_API_OLLAMA_MODEL for a synthesized answer."
-                )
+            answer = "The local model did not return a synthesis; collected evidence follows:\n\n" + numbered
+
+        available_evidence_indexes = {item["index"] for item in evidence if item.get("excerpt")}
+        if not _has_valid_evidence_citations(answer, available_evidence_indexes):
+            answer = "The local model returned no valid evidence citations; collected evidence follows:\n\n" + numbered
 
     sources = [{"url": item["url"], "title": item.get("title")} for item in evidence]
     return {

@@ -141,7 +141,7 @@ REGISTRY = (
         ),
         "extract",
     ),
-    Capability("scrape.deep", "experimental", "searxng-ollama", ("This is a local research dossier, not a dedicated entity-data source.",), "research"),
+    Capability("scrape.deep", "experimental", "searxng+duckduckgo-research", ("This is a local research dossier, not a dedicated entity-data source.",), "research"),
     Capability(
         "email.send",
         "structured",

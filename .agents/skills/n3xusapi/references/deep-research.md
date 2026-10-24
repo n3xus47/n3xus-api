@@ -28,11 +28,11 @@ Use `/v1/research/deep` for a question that needs multiple sources:
   "query": "What are the current tradeoffs between ...?",
   "context": "Relevant scope or user constraints",
   "instructions": "Cite every factual claim and call out missing evidence.",
-  "mode": "clean"
+  "mode": "raw"
 }
 ```
 
-`mode: "raw"` is the default and returns numbered evidence excerpts. `mode: "clean"` asks the configured local model to synthesize a sourced brief. The output includes `searchPlan`, `evidence`, and `completeness`; treat `partial` and `empty` as limitations of the collected evidence, not as confidence scores.
+Use `mode: "raw"` for the skill's normal workflow. It returns numbered evidence without waiting for local-model planning or synthesis; write the concise cited answer from those excerpts. `mode: "clean"` invokes the local model and is experimental. Use it only when the user specifically wants API-generated synthesis, and accept its answer only when factual claims cite valid evidence numbers. If it returns the evidence fallback, synthesize from `evidence` yourself. The output includes `searchPlan`, `evidence`, and `completeness`; treat `partial` and `empty` as collection limits, not confidence scores.
 
 ## Dossiers
 

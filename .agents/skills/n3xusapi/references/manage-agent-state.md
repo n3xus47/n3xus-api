@@ -14,4 +14,4 @@ Use `GET /v1/memory` to list files, `GET /v1/memory/{path}` to read, `POST /v1/m
 
 ## Usage and feedback
 
-`GET /v1/usage` reports local usage with zero debit; `/v1/balance` and `/v1/me` describe local mode rather than a hosted account. Send one concise `POST /v1/feedback` after a reproducible failure or a concrete product idea, including the relevant `requestId` when available. Do not send secrets, page credentials, or raw private data in feedback.
+`GET /v1/usage` reports local usage with zero debit; `/v1/balance` and `/v1/me` describe local mode rather than a hosted account. Send `POST /v1/feedback` only when the user asks you to report feedback. Include a relevant `requestId` when available, and omit secrets, page credentials, and private data.
