@@ -22,7 +22,7 @@ cd n3xus-api
 npm run setup
 ```
 
-`npm run setup` tworzy `.env`, pobiera najnowsze obrazy Docker i skonfigurowany model Ollama, buduje API i uruchamia cały stos. Przy pierwszym uruchomieniu pobieranie może potrwać. Ponowne uruchomienie tej komendy sprawdza dostępność nowszych wersji; niezmienione warstwy i model nie są pobierane ponownie. Setup aktualizuje też poprzednią domyślną wartość `qwen3.5:27b` do szybszego `qwen3.5:4b`; własny model wybrany przez użytkownika pozostaje bez zmian.
+`npm run setup` tworzy `.env`, pobiera najnowsze obrazy Docker i skonfigurowany model Ollama, buduje API i uruchamia cały stos. Przy pierwszym uruchomieniu pobieranie może potrwać. Ponowne uruchomienie tej komendy sprawdza dostępność nowszych wersji; niezmienione warstwy i model nie są pobierane ponownie. Setup odświeża też konfigurację SearxNG, migruje poprzednią domyślną wartość `qwen3.5:27b` do szybszego `qwen3.5:4b` i pozostawia własny model bez zmian. Szybki `npm start` migruje poprzedni domyślny limit wyszukiwania z 5 wariantów do 3, bez pobierania obrazów ani modeli.
 
 Do zwykłego, szybkiego uruchamiania już przygotowanego stosu użyj:
 

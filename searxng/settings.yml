@@ -14,18 +14,19 @@ outgoing:
   request_timeout: 10.0
   max_request_timeout: 15.0
 
-# Default meta engines often rate-limit or CAPTCHA on fresh IPs; prefer stable general search.
+# Keep the configured search chain on engines verified in the local network.
 engines:
   - name: duckduckgo
-    disabled: false
-    weight: 0.5
-  - name: brave
     disabled: true
+    weight: 0.1
+  - name: brave
+    disabled: false
+    weight: 1.0
   - name: google
     disabled: true
   - name: bing
     disabled: false
     weight: 2.0
   - name: startpage
-    disabled: false
+    disabled: true
     weight: 1.0

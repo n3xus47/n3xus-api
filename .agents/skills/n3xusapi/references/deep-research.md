@@ -40,7 +40,7 @@ Use `/v1/scrape/deep` for a compact dossier when the user wants a subject collec
 
 ## Evidence rules
 
-Search snippets are leads, not page content. Scrape the candidate URL with `/v1/scrape/website` before treating a result as proof. For official or domain-specific sourcing, use a `site:<domain>` query with `/v1/search/web` or scrape a known official URL directly; broad `/v1/research/deep` can return only secondary sources. Its `complete` state describes collection coverage, not relevance or authority. Claim primary-source support only after confirming the returned page URL and content. Keep source URLs in the answer and state when a page was blocked, empty, or represented only by a search snippet.
+Search snippets are leads, not page content. Scrape the candidate URL with `/v1/scrape/website` before treating a result as proof. For official or domain-specific sourcing, use a `site:<domain>` query with `/v1/search/web` or scrape a known official URL directly; broad `/v1/research/deep` can return only secondary sources. A `site:` query restricts the host, not a specific path or product version, so scrape the exact URL when the requested evidence is version-specific. The `complete` state describes collection coverage, not relevance or authority. Claim primary-source support only after confirming the returned page URL and content. Keep source URLs in the answer and state when a page was blocked, empty, or represented only by a search snippet.
 
 ## Recovery
 

@@ -6,7 +6,7 @@ class Settings(BaseSettings):
 
     searxng_url: str = "http://searxng:8080"
     search_ddg_enabled: bool = True
-    search_variant_limit: int = 5
+    search_variant_limit: int = 3
     request_timeout_secs: float = 25
     browser_fallback: bool = True
     human_challenge: bool = True

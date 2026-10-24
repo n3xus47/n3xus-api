@@ -2,7 +2,7 @@
 name: n3xusapi
 description: Configure and use n3xusAPI from an AI agent for public-web search, scraping, research, platform data, browser tasks, transcription, email, image generation, and local memory. Use the API's configured base URL and report source provenance and support limits.
 metadata:
-  skill-version: "local-12"
+  skill-version: "local-14"
 ---
 
 # n3xusAPI

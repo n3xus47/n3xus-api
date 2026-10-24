@@ -10,6 +10,8 @@ from app.config import settings
 from app.models import SearchResult
 
 logger = logging.getLogger(__name__)
+SEARCH_PROVIDER_TIMEOUT_SECS = 8.0
+DDG_PROVIDER_TIMEOUT_SECS = 4.0
 
 
 class SearchError(Exception):
@@ -17,7 +19,7 @@ class SearchError(Exception):
 
 
 # Engines that tend to work on self-hosted SearxNG without paid keys (see searxng/settings.yml).
-SEARXNG_ENGINE_CHAIN = ("bing", "startpage")
+SEARXNG_ENGINE_CHAIN = ("bing", "brave")
 
 # Minimum relevance_score for the top merged hit; below this we return no web results (agent-safe).
 SEARCH_RELEVANCE_FLOOR = 2.5
@@ -58,7 +60,8 @@ class SearchFusionOutcome:
 
 
 async def _searxng_search(query: str, max_results: int) -> tuple[list[SearchResult], str | None]:
-    async with httpx.AsyncClient(timeout=settings.request_timeout_secs) as client:
+    timeout = min(settings.request_timeout_secs, SEARCH_PROVIDER_TIMEOUT_SECS)
+    async with httpx.AsyncClient(timeout=timeout) as client:
         response = await client.get(
             f"{settings.searxng_url.rstrip('/')}/search",
             params={
@@ -95,34 +98,23 @@ async def _searxng_search_optional(query: str, max_results: int) -> tuple[list[S
 
 
 def _ddg_search_sync(query: str, max_results: int) -> list[SearchResult]:
-    import time
-
     from ddgs import DDGS
 
-    last_error: Exception | None = None
-    for attempt in range(3):
-        try:
-            rows = DDGS().text(query, max_results=max_results)
-            results: list[SearchResult] = []
-            for item in rows:
-                url = item.get("href") or item.get("url")
-                if not url:
-                    continue
-                results.append(
-                    SearchResult(
-                        title=item.get("title") or url,
-                        url=url,
-                        snippet=item.get("body") or item.get("snippet") or None,
-                        dateText=None,
-                    )
-                )
-            return results
-        except Exception as error:
-            last_error = error
-            time.sleep(0.4 * (attempt + 1))
-    if last_error:
-        raise last_error
-    return []
+    rows = DDGS(timeout=DDG_PROVIDER_TIMEOUT_SECS).text(query, max_results=max_results)
+    results: list[SearchResult] = []
+    for item in rows:
+        url = item.get("href") or item.get("url")
+        if not url:
+            continue
+        results.append(
+            SearchResult(
+                title=item.get("title") or url,
+                url=url,
+                snippet=item.get("body") or item.get("snippet") or None,
+                dateText=None,
+            )
+        )
+    return results
 
 
 async def _ddg_search_optional(query: str, max_results: int) -> list[SearchResult]:
@@ -361,9 +353,15 @@ async def search_web_fused(
     per_variant = max(max_results, 10)
     providers: list[str] = []
 
-    searxng_tasks = [_searxng_search_optional(variant, per_variant) for variant in variants]
+    searxng_tasks = [
+        asyncio.wait_for(_searxng_search_optional(variant, per_variant), timeout=SEARCH_PROVIDER_TIMEOUT_SECS)
+        for variant in variants
+    ]
     ddg_query = query if site_host else relevance_query
-    ddg_task = _ddg_search_optional(ddg_query, max(max_results, 15))
+    ddg_task = asyncio.wait_for(
+        _ddg_search_optional(ddg_query, max(max_results, 15)),
+        timeout=SEARCH_PROVIDER_TIMEOUT_SECS,
+    )
     gathered = await asyncio.gather(*searxng_tasks, ddg_task, return_exceptions=True)
     searxng_outcomes = gathered[: len(searxng_tasks)]
     ddg_outcome = gathered[len(searxng_tasks)]
@@ -393,23 +391,7 @@ async def search_web_fused(
     if ranked:
         return SearchFusionOutcome(ranked, answer, unique_providers)
 
-    if settings.search_ddg_enabled:
-        retry = await _ddg_search_optional(ddg_query, max(max_results, 20))
-        if retry:
-            ranked = finalize_fused_results(query, relevance_query, retry, max_results)
-            if ranked:
-                return SearchFusionOutcome(ranked, answer, ("duckduckgo",))
-
     if merged:
         return SearchFusionOutcome([], answer, unique_providers)
-
-    if settings.search_ddg_enabled:
-        ddg_only = await _ddg_search_optional(relevance_query, max_results)
-        if ddg_only:
-            return SearchFusionOutcome(
-                finalize_fused_results(query, relevance_query, ddg_only, max_results),
-                None,
-                ("duckduckgo",),
-            )
 
     raise SearchError("Web search is unavailable (no results from configured providers)")

@@ -6,13 +6,19 @@ from urllib.parse import urlparse
 from app.llm import LlmError, generate
 from app.models import Page, SearchResult, WebsiteScrapeRequest
 from app.scraper import scrape_website
-from app.search import build_search_variants, relevance_score, search_web_fused
+from app.search import (
+    build_search_variants,
+    parse_site_restriction,
+    relevance_score,
+    search_web_fused,
+    url_matches_site_host,
+)
 
 MIN_RESEARCH_HIT_RELEVANCE = 3.0
 
 MAX_EVIDENCE_PAGES = 8
 MAX_RESULTS_PER_QUERY = 8
-MAX_SEARCH_PLAN_QUERIES = 6
+MAX_SEARCH_PLAN_QUERIES = 3
 MAX_EVIDENCE_EXCERPT_CHARS = 2_500
 RESEARCH_SCRAPE_MAX_CHARS = 40_000
 RESEARCH_CITATION_PATTERN = re.compile(r"\[(\d+)\]")
@@ -40,7 +46,9 @@ def merge_search_plan(query: str, planned: list[str]) -> list[str]:
     """Universal open-web plan: anchor question + LLM angles + fusion variants."""
     anchor = query.strip()
     merged: list[str] = []
-    for candidate in [anchor, *planned, *build_search_variants(anchor, limit=5)]:
+    automatic_variants = build_search_variants(anchor, limit=MAX_SEARCH_PLAN_QUERIES)
+    candidates = [anchor, *planned, *automatic_variants[1:]]
+    for candidate in candidates:
         item = candidate.strip()
         if item and item not in merged:
             merged.append(item)
@@ -65,7 +73,13 @@ def _hit_relevance_score(query: str, hit: dict) -> float:
 
 
 def filter_relevant_hits(query: str, hits: list[dict], *, min_score: float = MIN_RESEARCH_HIT_RELEVANCE) -> list[dict]:
-    return [hit for hit in hits if _hit_relevance_score(query, hit) >= min_score]
+    _, site_host = parse_site_restriction(query)
+    return [
+        hit
+        for hit in hits
+        if (site_host is None or url_matches_site_host(hit["url"], site_host))
+        and _hit_relevance_score(query, hit) >= min_score
+    ]
 
 
 def merge_search_hits(planned_queries: list[str], batches: list[tuple[str, list[SearchResult]]]) -> list[dict]:

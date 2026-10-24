@@ -5,6 +5,7 @@ from uuid import uuid4
 from app.github import GitHubRateLimitError
 from app.main import app
 from app.models import Page
+from app.store import save_request
 
 
 @pytest.fixture
@@ -17,6 +18,17 @@ async def test_health(client):
     response = await client.get("/v1/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
+
+
+async def test_request_status_recovers_saved_response(client):
+    request_id = f"local_test_{uuid4().hex}"
+    saved_response = {"requestId": request_id, "status": "succeeded", "output": {"value": 7}}
+    save_request(request_id, "/v1/test", None, saved_response)
+
+    response = await client.get(f"/v1/requests/{request_id}")
+
+    assert response.status_code == 200
+    assert response.json() == saved_response
 
 
 async def test_website_uses_compatible_envelope(client, monkeypatch):

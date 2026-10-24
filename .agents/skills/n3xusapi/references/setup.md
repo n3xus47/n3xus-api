@@ -31,7 +31,7 @@ After cloning the repository, run this once to create `.env`, fetch current Dock
 npm run setup
 ```
 
-Run `npm run setup` again when you want to check for upstream image/model updates. Docker and Ollama reuse unchanged layers and model data. The default model is `qwen3.5:4b`; setup migrates the previous default `qwen3.5:27b` but preserves a model explicitly selected in the shell or `.env`. Set `N3XUS_API_OLLAMA_MODEL` to choose another model.
+Run `npm run setup` again when you want to check for upstream image/model updates. Docker and Ollama reuse unchanged layers and model data. The default model is `qwen3.5:4b`; setup migrates the previous default `qwen3.5:27b` but preserves a model explicitly selected in the shell or `.env`. Setup restarts SearxNG to apply updated local engine settings. The fast start also migrates the old default search variant limit from 5 to 3 without downloading images or models. Set `N3XUS_API_OLLAMA_MODEL` or `N3XUS_API_SEARCH_VARIANT_LIMIT` to choose another value.
 
 For normal skill use, start an initialized stack without network updates or rebuilds:
 

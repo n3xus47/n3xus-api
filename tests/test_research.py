@@ -24,6 +24,13 @@ def test_merge_search_plan_includes_anchor_and_variants():
     assert len(plan) >= 3
 
 
+def test_merge_search_plan_caps_redundant_query_fanout():
+    plan = merge_search_plan("Python 3.12 asyncio TaskGroup", [])
+
+    assert len(plan) == 3
+    assert plan[0] == "Python 3.12 asyncio TaskGroup"
+
+
 def test_research_citations_must_reference_evidence_with_content():
     assert _has_valid_evidence_citations("Asyncio is asynchronous [1].", {1, 3})
     assert not _has_valid_evidence_citations("Asyncio is asynchronous [2].", {1, 3})
@@ -82,6 +89,26 @@ def test_filter_relevant_hits_drops_off_topic_pl_noise_for_chef_query():
     assert "https://www.gordonramsay.com/recipes" in urls
     assert "https://sklep.example.pl/zara-top" not in urls
     assert "https://transfermarkt.example/gordon" not in urls
+
+
+def test_filter_relevant_hits_enforces_explicit_site_restriction():
+    query = "site:docs.python.org asyncio TaskGroup"
+    hits = [
+        {
+            "url": "https://docs.python.org/3.12/library/asyncio-task.html",
+            "title": "Coroutines and Tasks — Python 3.12 documentation",
+            "snippet": "asyncio.TaskGroup combines related tasks",
+        },
+        {
+            "url": "https://python.example/blog/taskgroup",
+            "title": "Python asyncio TaskGroup documentation",
+            "snippet": "TaskGroup combines related asyncio tasks",
+        },
+    ]
+
+    kept = filter_relevant_hits(query, hits)
+
+    assert [hit["url"] for hit in kept] == ["https://docs.python.org/3.12/library/asyncio-task.html"]
 
 
 def test_merge_search_hits_dedupes_urls_and_keeps_query_provenance():

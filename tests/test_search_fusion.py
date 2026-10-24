@@ -1,8 +1,10 @@
 import httpx
+import pytest
 
 from app.models import SearchResult
 from app.search import (
     SEARCH_RELEVANCE_FLOOR,
+    SearchError,
     SEARXNG_ENGINE_CHAIN,
     apply_relevance_floor,
     build_search_variants,
@@ -153,6 +155,112 @@ async def test_search_web_fused_falls_back_to_ddg_when_searxng_empty(monkeypatch
     assert outcome.results
     assert "duckduckgo" in outcome.providers
     assert outcome.results[0].url.startswith("https://docs.python.org")
+
+
+async def test_search_web_fused_does_not_wait_for_a_slow_provider(monkeypatch):
+    import asyncio
+    import app.search as search_mod
+
+    monkeypatch.setattr(search_mod, "SEARCH_PROVIDER_TIMEOUT_SECS", 0.02, raising=False)
+
+    async def slow_searxng(_query, _max):
+        await asyncio.sleep(1)
+        return [], None
+
+    async def quick_ddg(_query, _max):
+        return [
+            SearchResult(
+                title="Python asyncio docs",
+                url="https://docs.python.org/3/library/asyncio.html",
+                snippet="Python asyncio tasks",
+            )
+        ]
+
+    monkeypatch.setattr(search_mod, "_searxng_search_optional", slow_searxng)
+    monkeypatch.setattr(search_mod, "_ddg_search_optional", quick_ddg)
+
+    outcome = await asyncio.wait_for(
+        search_mod.search_web_fused("python asyncio tasks", 5, variant_limit=1), timeout=0.2
+    )
+
+    assert outcome.results
+    assert outcome.providers == ("duckduckgo",)
+
+
+async def test_search_web_fused_does_not_wait_for_slow_duckduckgo(monkeypatch):
+    import asyncio
+    import app.search as search_mod
+
+    monkeypatch.setattr(search_mod, "SEARCH_PROVIDER_TIMEOUT_SECS", 0.02, raising=False)
+
+    async def quick_searxng(_query, _max):
+        return [
+            SearchResult(
+                title="Python asyncio docs",
+                url="https://docs.python.org/3/library/asyncio.html",
+                snippet="Python asyncio tasks",
+            )
+        ], None
+
+    async def slow_ddg(_query, _max):
+        await asyncio.sleep(1)
+        return []
+
+    monkeypatch.setattr(search_mod, "_searxng_search_optional", quick_searxng)
+    monkeypatch.setattr(search_mod, "_ddg_search_optional", slow_ddg)
+
+    outcome = await asyncio.wait_for(
+        search_mod.search_web_fused("python asyncio tasks", 5, variant_limit=1), timeout=0.2
+    )
+
+    assert outcome.results
+    assert outcome.providers == ("searxng",)
+
+
+async def test_search_web_fused_does_not_retry_empty_provider_results(monkeypatch):
+    calls = {"ddg": 0}
+
+    async def empty_searxng(_query, _max):
+        return [], None
+
+    async def empty_ddg(_query, _max):
+        calls["ddg"] += 1
+        return []
+
+    monkeypatch.setattr("app.search._searxng_search_optional", empty_searxng)
+    monkeypatch.setattr("app.search._ddg_search_optional", empty_ddg)
+
+    with pytest.raises(SearchError):
+        await search_web_fused("python asyncio tasks", 5, variant_limit=1)
+
+    assert calls["ddg"] == 1
+
+
+def test_ddg_search_uses_an_explicit_short_provider_timeout(monkeypatch):
+    import ddgs
+    import app.search as search_mod
+
+    captured = {}
+
+    class FakeDDGS:
+        def __init__(self, *, timeout):
+            captured["timeout"] = timeout
+
+        def text(self, _query, *, max_results):
+            return [
+                {
+                    "href": "https://docs.python.org/3/library/asyncio.html",
+                    "title": "Asyncio",
+                    "body": "Python docs",
+                }
+            ][:max_results]
+
+    monkeypatch.setattr(ddgs, "DDGS", FakeDDGS)
+
+    results = search_mod._ddg_search_sync("python asyncio", 5)
+
+    assert captured["timeout"] == search_mod.DDG_PROVIDER_TIMEOUT_SECS
+    assert results[0].url == "https://docs.python.org/3/library/asyncio.html"
 
 
 async def test_search_web_fused_ignores_searxng_variant_failures(monkeypatch):

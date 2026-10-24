@@ -43,7 +43,7 @@ from app.search import SearchError, search_web_fused
 from app.seo import competitors as seo_competitors, rank as seo_rank
 from app.seo_adapters import keyword_metrics as seo_keyword_metrics, provenance_name as seo_provenance_name
 from app.store import (create_email_domain, create_email_identity, delete_email_domain, delete_memory,
-                       find_idempotent, get_email_domain, get_email_draft, get_memory, list_email_domains,
+                       find_idempotent, get_email_domain, get_email_draft, get_memory, get_request, list_email_domains,
                        list_email_drafts, list_email_identities, list_email_messages, list_memory, list_requests,
                        remove_email_draft, save_email_draft, save_request, set_email_domain_verified,
                        update_email_identity, write_memory)

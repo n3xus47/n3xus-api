@@ -8,6 +8,7 @@ cd "$REPO_DIR"
 BASE_URL="${N3XUS_API_BASE_URL:-http://127.0.0.1:8000}"
 TIMEOUT_SECS="${N3XUS_API_STARTUP_TIMEOUT_SECS:-180}"
 MODEL_OVERRIDE="${N3XUS_API_OLLAMA_MODEL:-}"
+SEARCH_VARIANT_OVERRIDE="${N3XUS_API_SEARCH_VARIANT_LIMIT:-}"
 MODE="${1:-start}"
 
 die() {
@@ -60,6 +61,13 @@ if [[ "$MODE" == "--update" && -z "$MODEL_OVERRIDE" && "${N3XUS_API_OLLAMA_MODEL
   N3XUS_API_OLLAMA_MODEL=qwen3.5:4b
   printf 'Migrated the previous default model from qwen3.5:27b to qwen3.5:4b.\n'
 fi
+if [[ -n "$SEARCH_VARIANT_OVERRIDE" ]]; then
+  N3XUS_API_SEARCH_VARIANT_LIMIT="$SEARCH_VARIANT_OVERRIDE"
+elif [[ "${N3XUS_API_SEARCH_VARIANT_LIMIT:-}" == "5" ]]; then
+  sed -i 's/^N3XUS_API_SEARCH_VARIANT_LIMIT=.*/N3XUS_API_SEARCH_VARIANT_LIMIT=3/' .env
+  N3XUS_API_SEARCH_VARIANT_LIMIT=3
+  printf 'Migrated the previous default search variant limit from 5 to 3.\n'
+fi
 MODEL="${MODEL_OVERRIDE:-${N3XUS_API_OLLAMA_MODEL:-qwen3.5:4b}}"
 export N3XUS_API_OLLAMA_MODEL="$MODEL"
 
@@ -69,6 +77,7 @@ if [[ "$MODE" == "--update" ]]; then
 
   printf 'Starting Ollama and SearxNG...\n'
   docker compose up -d searxng ollama
+  docker compose restart searxng
   wait_for_ollama
 
   printf 'Updating the %s model and building the API in parallel...\n' "$MODEL"
