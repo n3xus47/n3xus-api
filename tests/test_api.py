@@ -209,8 +209,8 @@ async def test_external_adapters_emit_source_provenance(client, monkeypatch):
 
     assert search.json()["source"]["collectionState"] == "empty"
     assert github.json()["source"]["name"] == "github-public-rest"
-    assert places.json()["source"]["name"] == "openstreetmap-nominatim"
-    assert open_business.json()["source"]["name"] == "openstreetmap-nominatim"
+    assert places.json()["source"]["name"] == "openstreetmap-nominatim+overpass"
+    assert open_business.json()["source"]["name"] == "openstreetmap-nominatim+overpass"
     assert open_business.json()["capability"] == "scrape.open-business"
 
 
@@ -406,6 +406,7 @@ async def test_capabilities_expose_truthful_support_metadata(client):
     capabilities = {item["slug"]: item for item in response.json()["output"]}
     assert capabilities["scrape.github"]["supportLevel"] == "structured"
     assert capabilities["scrape.open-business"]["supportLevel"] == "structured"
+    assert capabilities["scrape.open-business"]["adapter"] == "openstreetmap-nominatim+overpass"
     assert capabilities["scrape.amazon"]["supportLevel"] == "structured"
     assert "Structured Amazon" in capabilities["scrape.amazon"]["limitations"][0]
     assert capabilities["scrape.deep"]["adapter"] == "searxng+duckduckgo-research"

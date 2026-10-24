@@ -481,8 +481,8 @@ async def public_source_response(route: str, capability: str, payload: dict, raw
         return failure(route, capability, "request_failed", str(error), 502)
     output, collection_state = strip_collection_state(output)
     source_name = {
-        "scrape.google": "openstreetmap-nominatim",
-        "scrape.open-business": "openstreetmap-nominatim",
+        "scrape.google": "openstreetmap-nominatim+overpass",
+        "scrape.open-business": "openstreetmap-nominatim+overpass",
         "scrape.amazon": "public-amazon-structured",
         "scrape.twitter": "public-x-pages",
         "scrape.instagram": "instagram-public-og",

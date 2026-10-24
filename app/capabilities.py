@@ -113,9 +113,11 @@ REGISTRY = (
     Capability(
         "scrape.open-business",
         "structured",
-        "openstreetmap-nominatim",
+        "openstreetmap-nominatim+overpass",
         (
-            "OpenStreetMap Nominatim only; ratings and review counts are never returned.",
+            "Nominatim resolves locations and searches named places; Overpass lists recognized OSM categories around a location.",
+            "Category search supports charging stations, cafes, restaurants, pharmacies, fuel stations and supermarkets; radius defaults to 10 km and is capped at 50 km.",
+            "Ratings and review counts are never returned.",
             "Phone and website appear only when present in OSM tags.",
         ),
         "places",
@@ -123,7 +125,7 @@ REGISTRY = (
     Capability(
         "scrape.google",
         "best_effort",
-        "openstreetmap-nominatim",
+        "openstreetmap-nominatim+overpass",
         (
             "Deprecated alias for /v1/scrape/open-business/search; not Google Places data.",
             "Prefer scrape.open-business for structured open-business records.",

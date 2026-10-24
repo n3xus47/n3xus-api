@@ -77,7 +77,7 @@ Konfiguracja i procedura uruchomienia znajdują się w [instrukcji konfiguracji 
 - Wyszukuje w sieci za pomocą lokalnego SearxNG i DuckDuckGo, a następnie usuwa duplikaty i szereguje wyniki.
 - Pobiera publiczne dane z GitHuba i YouTube przez adaptery dostosowane do tych źródeł oraz wyodrębnia tekst z publicznych plików PDF.
 - Prowadzi badania oparte na źródłach i ekstrakcję zgodną ze schematem; opcjonalnie korzysta z lokalnego Ollama.
-- Udostępnia adaptery stron publicznych dla serwisów społecznościowych, Amazona i otwartych katalogów firm. Każda możliwość podaje adapter i znane ograniczenia.
+- Udostępnia adaptery stron publicznych dla serwisów społecznościowych, Amazona i otwartych katalogów firm. Wyszukiwanie firm obsługuje nazwy miejsc oraz kategorie, takie jak kawiarnie czy stacje ładowania EV, z lokalizacją i promieniem; używa OpenStreetMap, nie Google Places.
 - Oferuje zadania w przeglądarce, ręcznie obsługiwane sesje przeglądarki, transkrypcję audio, generowanie obrazów i jednorazowe zadania w Dockerze.
 - Zapisuje żądania, wyniki idempotentne, pliki pamięci i szkice/wiadomości e-mail w lokalnej bazie SQLite.
 
