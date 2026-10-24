@@ -22,7 +22,7 @@ cd n3xus-api
 ./scripts/ensure-local-stack.sh
 ```
 
-Przy pierwszym uruchomieniu Docker pobierze potrzebne obrazy i duży model Ollama, więc może to chwilę potrwać. Gdy API będzie gotowe, sprawdź je:
+Jeśli nie masz jeszcze `.env`, skrypt utworzy go z `.env.example`. Przy pierwszym uruchomieniu Docker pobierze potrzebne obrazy i duży model Ollama, więc może to chwilę potrwać. Gdy API będzie gotowe, sprawdź je:
 
 ```bash
 curl http://localhost:8000/v1/health
@@ -42,6 +42,20 @@ curl -X POST http://localhost:8000/v1/search/web \
 API zwróci JSON z wynikami wyszukiwania. Pole `output` zawiera dane, a `status` mówi, czy operacja się powiodła. W odpowiedziach ze źródeł internetowych może pojawić się też informacja, skąd i kiedy pobrano dane.
 
 Dokumentacja uruchomionego API: [Swagger UI](http://localhost:8000/docs) i [ReDoc](http://localhost:8000/redoc). Szczegółowy opis tras znajduje się w [referencji API](docs/api-reference.md).
+
+## Skill dla agenta AI
+
+Repozytorium zawiera skill [n3xusapi](.agents/skills/n3xusapi/SKILL.md). Agent korzystający ze skillów projektowych może przez niego uruchamiać API, wybierać właściwe trasy i interpretować źródła oraz ograniczenia wyników.
+
+Skill odczytuje konfigurację klienta z procesu agenta:
+
+| Zmienna | Domyślnie | Zastosowanie |
+| --- | --- | --- |
+| `N3XUS_API_BASE_URL` | `http://127.0.0.1:8000` | Adres API dostępny dla agenta. |
+| `N3XUS_API_REPO` | wykrywany z lokalizacji skillu | Ścieżka do klonu repozytorium, z którego można uruchomić lokalny stos. |
+| `N3XUS_API_API_KEY` | brak | Klucz klienta tylko wtedy, gdy serwer ma włączone uwierzytelnianie. |
+
+Konfiguracja i procedura uruchomienia znajdują się w [instrukcji konfiguracji skillu](.agents/skills/n3xusapi/references/setup.md). Ustawienia serwera są osobne — opisuje je plik `.env.example`.
 
 ## Szczegóły
 
@@ -145,7 +159,7 @@ API jest przeznaczone dla jednego zaufanego operatora lokalnego. Wykonywanie zad
 
 ### Wymagania
 
-- Docker Engine z wtyczką Compose
+- Docker Engine z Docker Compose 2.24 lub nowszym
 - `curl` i Bash do uruchomienia skryptu startowego
 - Wystarczająca ilość pamięci i miejsca na skonfigurowany model Ollama. Domyślny `qwen3.5:27b` jest duży; w razie potrzeby wybierz mniejszy model przez `N3XUS_API_OLLAMA_MODEL`.
 
@@ -159,11 +173,11 @@ Zastąp `your-ollama-model` identyfikatorem modelu dostępnym w Ollama.
 
 Możesz też zarządzać usługami bezpośrednio przez Compose: `docker compose up --build -d` oraz `docker compose down`. Skrypt startowy jest zalecany, jeśli chcesz poczekać na Ollama, upewnić się, że model jest zainstalowany, i sprawdzić gotowość API.
 
-Domyślny zestaw nie wymaga pliku `.env`. Opcjonalne ustawienia są przekazywane przez zmienne `N3XUS_API_*`; szczegóły znajdują się w sekcji [Konfiguracja](#konfiguracja). Nie dodawaj plików `.env` ani danych uwierzytelniających do repozytorium.
+Skrypt startowy tworzy `.env` z `.env.example`, jeśli plik jeszcze nie istnieje. Edytuj `.env` na swojej maszynie; nie dodawaj go ani sekretów do repozytorium. Przy bezpośrednim uruchomieniu Compose możesz najpierw wykonać `cp .env.example .env`, jeśli chcesz zmienić konfigurację.
 
 ## Konfiguracja
 
-Ustawienia można przekazać przez zmienne środowiskowe z prefiksem `N3XUS_API_`. Aplikacja odczytuje również lokalny plik `.env`, jeśli istnieje. Najważniejsze opcjonalne ustawienia:
+Ustawienia serwera są przekazywane do kontenera API przez lokalny plik `.env`, przygotowany na podstawie [`.env.example`](.env.example). Dostępne opcjonalne ustawienia:
 
 | Zmienna | Domyślnie | Zastosowanie |
 | --- | --- | --- |
@@ -180,6 +194,8 @@ Ustawienia można przekazać przez zmienne środowiskowe z prefiksem `N3XUS_API_
 | `N3XUS_API_STABLE_DIFFUSION_URL` | brak | Opcjonalny adres API lokalnej usługi zgodnej z AUTOMATIC1111. |
 | `N3XUS_API_META_ADS_ACCESS_TOKEN` | brak | Opcjonalny token z dostępem do Meta Ads Library API. |
 | `N3XUS_API_VM_HOST_DATA_DIR` | ustawiane przez Compose | Ścieżka hosta montowana dla plików tworzonych przez zadania Docker. |
+
+Domyślne wartości w `.env.example` wystarczają do uruchomienia lokalnego stosu. Zewnętrzne usługi, takie jak SMTP, Meta Ads Library i serwer Stable Diffusion, wymagają własnej konfiguracji. Nie wpisuj ich sekretów do pliku przykładowego.
 
 Zestaw Compose jest skonfigurowany do komunikacji po lokalnej sieci Dockera. Adresy takie jak `http://ollama:11434` są nazwami usług dostępnymi wewnątrz Compose, a nie z terminala hosta. Niektóre opcjonalne integracje wymagają dodatkowych usług lub uprawnień hosta; ich ograniczenia są widoczne w rejestrze możliwości.
 
@@ -200,6 +216,8 @@ Domyślny adres API to `http://127.0.0.1:8000`. Narzędzie ewaluacyjne używa no
 | --- | --- |
 | `app/` | Trasy FastAPI, kontrakty żądań i odpowiedzi, adaptery oraz usługi lokalne |
 | `docs/api-reference.md` | Opis tras i kontraktów API |
+| `.agents/skills/n3xusapi/` | Skill agenta AI i instrukcje korzystania z API |
+| `.env.example` | Przykładowa konfiguracja serwera API |
 | `docs/` | Zasady, notatki operacyjne, audyty, migracje bazy i raporty ewaluacji |
 | `evals/` | Fixture'y żądań do publicznych celów oraz metadane lokalnych próbek audio |
 | `tests/` | Testy API, adapterów i kontraktów |

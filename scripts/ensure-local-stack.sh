@@ -37,6 +37,16 @@ wait_for_api() {
 require_command docker
 require_command curl
 
+if [[ ! -f .env ]]; then
+  cp .env.example .env
+  printf 'Created .env from .env.example. Review optional settings before exposing integrations.\n'
+fi
+
+# Keep the shell helper and Compose container on the same configured model.
+set -a
+. ./.env
+set +a
+
 printf 'Starting Ollama and SearxNG...\n'
 docker compose up -d searxng ollama
 wait_for_ollama
