@@ -2,7 +2,7 @@
 name: n3xusapi
 description: Configure and use n3xusAPI from an AI agent for public-web search, scraping, research, platform data, browser tasks, transcription, email, image generation, and local memory. Use the API's configured base URL and report source provenance and support limits.
 metadata:
-  skill-version: "local-8"
+  skill-version: "local-9"
 ---
 
 # n3xusAPI
@@ -13,7 +13,8 @@ This file is a compact router. The `references/` files are organized by user wor
 
 - Read [references/setup.md](references/setup.md) before the first API call in a session or whenever the base URL, repository path, or authentication is unclear. It contains the agent environment template and startup steps.
 - Use the configured `N3XUS_API_BASE_URL`; the default is `http://127.0.0.1:8000`. Use `N3XUS_API_REPO` for the checkout path, or infer the repository root from this skill's `.agents/skills/n3xusapi/` location.
-- For a custom or already running API, check `/v1/health` and use it without starting another stack. For the default local service, start `scripts/ensure-local-stack.sh` from the repository only when health is unavailable. The script starts Ollama and SearxNG, ensures the configured model (default `qwen3.5:27b`), then starts the API.
+- After cloning, initialize or refresh the local stack with `npm run setup`; it checks for current Docker images and the latest configured Ollama model, then builds the API. For routine starts, use `npm start` or `scripts/ensure-local-stack.sh`; this fast path uses only local images and models. Read [references/setup.md](references/setup.md) for the first setup and update flow.
+- For a custom or already running API, check `/v1/health` and use it without starting another stack. For the default local service, run `scripts/ensure-local-stack.sh` from the repository only when health is unavailable. If the local setup is missing, the script exits quickly and points to `npm run setup`.
 - Local mode needs no API key by default. If the configured API returns `401`, read `N3XUS_API_API_KEY` from the environment and send `Authorization: Bearer $N3XUS_API_API_KEY`; never print, log, or expose the key.
 - Fetch public web pages through n3xusAPI routes such as `POST /v1/scrape/website` and `POST /v1/search/web` so the API's public-target protections and provenance are retained.
 

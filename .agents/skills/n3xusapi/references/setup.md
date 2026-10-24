@@ -23,11 +23,29 @@ export N3XUS_API_REPO="/absolute/path/to/n3xus-api"
 
 Keep the API key in the agent's secret/environment settings. Do not commit it to the repository, put it in a prompt, or print it in command output.
 
+## Initialize and update the local stack
+
+After cloning the repository, run this once to create `.env`, fetch current Docker images and the latest version of the configured Ollama model, build the API image, and start the services:
+
+```sh
+npm run setup
+```
+
+Run `npm run setup` again when you want to check for upstream image/model updates. Docker and Ollama reuse unchanged layers and model data. The default model is `qwen3.5:4b`; set `N3XUS_API_OLLAMA_MODEL` in `.env` or in the command environment to choose another model.
+
+For normal skill use, start an initialized stack without network updates or rebuilds:
+
+```sh
+npm start
+```
+
+This fast path uses `docker compose up --no-build --pull never`, checks that the configured model is already installed, and waits for `/v1/health`. If setup has not run or local prerequisites are missing, it exits with a `npm run setup` instruction. The skill uses this fast path only when the default local API is unavailable.
+
 ## Select a service
 
 1. If `N3XUS_API_BASE_URL` points to an existing service, check `GET $N3XUS_API_BASE_URL/v1/health` and use that service. Do not start a second local stack.
-2. If using the default local URL and it is unavailable, resolve `N3XUS_API_REPO` and run `scripts/ensure-local-stack.sh` from that repository root.
-3. The startup script starts Ollama and SearxNG, ensures the configured model is installed, starts the API, and waits for `/v1/health`. The model defaults to `qwen3.5:27b`; set `N3XUS_API_OLLAMA_MODEL` in the server environment before startup to select another Ollama model.
+2. If using the default local URL and it is unavailable, resolve `N3XUS_API_REPO` and run `npm start` (or `scripts/ensure-local-stack.sh`) from that repository root.
+3. The fast start script uses installed images and the configured model, starts the services, and waits for `/v1/health`. Run `npm run setup` when the local stack has not been initialized or when you want the latest upstream images/model.
 4. If the health check still fails, report the observed startup or HTTP error. Do not switch to direct HTTP requests to the target website.
 
 ## Server configuration

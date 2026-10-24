@@ -14,15 +14,25 @@ Twoja aplikacja  →  n3xusAPI  →  źródło danych  →  odpowiedź JSON
 
 ## Uruchomienie
 
-Potrzebujesz Dockera. W terminalu wykonaj:
+Potrzebujesz Node.js z npm oraz Dockera. W terminalu wykonaj:
 
 ```bash
 git clone https://github.com/n3xus47/n3xus-api.git
 cd n3xus-api
-./scripts/ensure-local-stack.sh
+npm run setup
 ```
 
-Jeśli nie masz jeszcze `.env`, skrypt utworzy go z `.env.example`. Przy pierwszym uruchomieniu Docker pobierze potrzebne obrazy i duży model Ollama, więc może to chwilę potrwać. Gdy API będzie gotowe, sprawdź je:
+`npm run setup` tworzy `.env`, pobiera najnowsze obrazy Docker i skonfigurowany model Ollama, buduje API i uruchamia cały stos. Przy pierwszym uruchomieniu pobieranie może potrwać. Ponowne uruchomienie tej komendy sprawdza dostępność nowszych wersji; niezmienione warstwy i model nie są pobierane ponownie.
+
+Do zwykłego, szybkiego uruchamiania już przygotowanego stosu użyj:
+
+```bash
+npm start
+```
+
+Ta komenda nie sprawdza aktualizacji, nie pobiera obrazów ani modeli i nie przebudowuje API. Skill używa tego samego szybkiego trybu, kiedy lokalne API nie odpowiada. Jeśli setup nie był jeszcze wykonany albo brakuje lokalnych obrazów/modelu, uruchom `npm run setup`.
+
+Gdy API będzie gotowe, sprawdź je:
 
 ```bash
 curl http://localhost:8000/v1/health
@@ -160,20 +170,20 @@ API jest przeznaczone dla jednego zaufanego operatora lokalnego. Wykonywanie zad
 ### Wymagania
 
 - Docker Engine z Docker Compose 2.24 lub nowszym
-- `curl` i Bash do uruchomienia skryptu startowego
-- Wystarczająca ilość pamięci i miejsca na skonfigurowany model Ollama. Domyślny `qwen3.5:27b` jest duży; w razie potrzeby wybierz mniejszy model przez `N3XUS_API_OLLAMA_MODEL`.
+- Node.js z npm, Docker Engine z Docker Compose 2.24 lub nowszym, `curl` i Bash
+- Pamięć i miejsce na skonfigurowany model Ollama. Domyślny `qwen3.5:4b` jest mniejszy, aby lokalne zadania agenta startowały szybciej.
 
 Aby użyć innego modelu Ollama przy uruchamianiu:
 
 ```bash
-N3XUS_API_OLLAMA_MODEL=your-ollama-model ./scripts/ensure-local-stack.sh
+N3XUS_API_OLLAMA_MODEL=your-ollama-model npm run setup
 ```
 
-Zastąp `your-ollama-model` identyfikatorem modelu dostępnym w Ollama.
+Zastąp `your-ollama-model` identyfikatorem modelu dostępnym w Ollama. Przy kolejnym setupie ta sama komenda sprawdzi i pobierze najnowszą wersję wskazanego tagu.
 
-Możesz też zarządzać usługami bezpośrednio przez Compose: `docker compose up --build -d` oraz `docker compose down`. Skrypt startowy jest zalecany, jeśli chcesz poczekać na Ollama, upewnić się, że model jest zainstalowany, i sprawdzić gotowość API.
+Aktualizacje wykonuj jawnie przez `npm run setup`. Aby zatrzymać stos, użyj `docker compose down`. Po zmianach w kodzie API możesz przebudować wyłącznie jego obraz poleceniem `docker compose up --build -d api`.
 
-Skrypt startowy tworzy `.env` z `.env.example`, jeśli plik jeszcze nie istnieje. Edytuj `.env` na swojej maszynie; nie dodawaj go ani sekretów do repozytorium. Przy bezpośrednim uruchomieniu Compose możesz najpierw wykonać `cp .env.example .env`, jeśli chcesz zmienić konfigurację.
+Setup tworzy `.env` z `.env.example`, jeśli plik jeszcze nie istnieje. Edytuj `.env` na swojej maszynie; nie dodawaj go ani sekretów do repozytorium. Przy bezpośrednim uruchomieniu Compose możesz najpierw wykonać `cp .env.example .env`, jeśli chcesz zmienić konfigurację.
 
 ## Konfiguracja
 
@@ -186,7 +196,7 @@ Ustawienia serwera są przekazywane do kontenera API przez lokalny plik `.env`, 
 | `N3XUS_API_SEARXNG_URL` | `http://searxng:8080` | Adres SearxNG używany w sieci Compose. |
 | `N3XUS_API_SEARCH_DDG_ENABLED` | `true` | Włącza DuckDuckGo jako źródło fuzji lub zapasowe. |
 | `N3XUS_API_OLLAMA_URL` | `http://ollama:11434` | Adres usługi Ollama. |
-| `N3XUS_API_OLLAMA_MODEL` | `qwen3.5:27b` | Lokalny model do badań i ekstrakcji. |
+| `N3XUS_API_OLLAMA_MODEL` | `qwen3.5:4b` | Lokalny model do badań i ekstrakcji; setup pobiera aktualną wersję skonfigurowanego tagu. |
 | `N3XUS_API_SMTP_URL` | brak | Adres serwera SMTP do wysyłki e-maili. |
 | `N3XUS_API_SMTP_FROM` | brak | Domyślny adres nadawcy przy tworzeniu lokalnej tożsamości e-mail. |
 | `N3XUS_API_TRANSCRIPTION_MODEL` | `base` | Nazwa modelu faster-whisper. |

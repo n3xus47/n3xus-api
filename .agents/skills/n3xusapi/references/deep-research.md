@@ -2,7 +2,7 @@
 
 Use this reference for `POST /v1/search/web`, `POST /v1/research/deep`, and `POST /v1/scrape/deep`.
 
-Before the first research call in a session, run `scripts/ensure-local-stack.sh` from `N3XUS_API_REPO`. It starts the local services and verifies that `N3XUS_API_OLLAMA_MODEL` is present and current. The default is `qwen3.5:27b`; set the environment variable before startup to use another Ollama model.
+Before the first research call, check `/v1/health`. If the default local API is unavailable, run `npm start` from `N3XUS_API_REPO`; it starts the already configured services without network updates or builds. The default local model is `qwen3.5:4b`. If the stack has not been initialized or the model is missing, run `npm run setup` once to fetch current images and the latest configured model.
 
 ## Search
 
