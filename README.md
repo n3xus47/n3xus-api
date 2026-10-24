@@ -38,20 +38,66 @@ Gdy API będzie gotowe, sprawdź je:
 curl http://localhost:8000/v1/health
 ```
 
-## Pierwsze żądanie
+## Przykłady użycia
 
-Poniższy przykład wyszukuje strony dla podanego hasła:
+Każdy przykład można wkleić do terminala po uruchomieniu API. Żądania `POST` wymagają unikalnego `Idempotency-Key`; poniższe komendy tworzą go na podstawie bieżącego czasu. Jeśli w konfiguracji serwera ustawiono `N3XUS_API_API_KEY`, dodaj do każdego żądania `-H 'Authorization: Bearer <klucz>'` i zastąp `<klucz>` jego wartością.
+
+### 1. Wyszukaj strony w sieci
 
 ```bash
-curl -X POST http://localhost:8000/v1/search/web \
+curl -sS -X POST http://localhost:8000/v1/search/web \
   -H 'Content-Type: application/json' \
-  -H 'Idempotency-Key: moje-pierwsze-wyszukiwanie' \
-  -d '{"query":"FastAPI","maxResults":5}'
+  -H "Idempotency-Key: demo-web-search-$(date +%s)" \
+  -d '{"query":"FastAPI background tasks documentation","maxResults":5}'
 ```
 
-API zwróci JSON z wynikami wyszukiwania. Pole `output` zawiera dane, a `status` mówi, czy operacja się powiodła. W odpowiedziach ze źródeł internetowych może pojawić się też informacja, skąd i kiedy pobrano dane.
+W `output.results` znajdziesz tytuły, adresy i dostępne opisy znalezionych stron.
 
-Dokumentacja uruchomionego API: [Swagger UI](http://localhost:8000/docs) i [ReDoc](http://localhost:8000/redoc). Szczegółowy opis tras znajduje się w [referencji API](docs/api-reference.md).
+### 2. Pobierz stronę jako Markdown
+
+```bash
+curl -sS -X POST http://localhost:8000/v1/scrape/website \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: demo-scrape-website-$(date +%s)" \
+  -d '{"urls":"https://fastapi.tiangolo.com/tutorial/","contentFormat":"markdown","maxPages":1,"maxChars":15000}'
+```
+
+Odpowiedź zawiera pobraną treść, tytuł strony i informacje o źródle. `maxPages: 1` ogranicza pobieranie do wskazanej strony.
+
+### 3. Zbierz źródła do researchu
+
+```bash
+curl -sS -X POST http://localhost:8000/v1/research/deep \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: demo-research-$(date +%s)" \
+  -d '{"query":"Jak FastAPI zaleca obsługiwać długie zadania w tle?","mode":"raw"}'
+```
+
+Tryb `raw` zwraca znalezione dowody i adresy stron bez wymagania lokalnego modelu Ollama.
+
+### 4. Pobierz metadane repozytorium GitHub
+
+```bash
+curl -sS -X POST http://localhost:8000/v1/scrape/github/repo \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: demo-github-repo-$(date +%s)" \
+  -d '{"repository":"n3xus47/n3xus-api"}'
+```
+
+API zwraca publiczne metadane repozytorium; wynik zależy od dostępności GitHuba i jego limitów dla anonimowych żądań.
+
+### 5. Znajdź miejsca według kategorii
+
+```bash
+curl -sS -X POST http://localhost:8000/v1/scrape/open-business/search \
+  -H 'Content-Type: application/json' \
+  -H "Idempotency-Key: demo-open-business-$(date +%s)" \
+  -d '{"search":"electric vehicle charging station","location":"Warsaw, Poland","radiusMeters":5000,"maxItems":5}'
+```
+
+Kategorie, np. `coffee shop`, `restaurant`, `pharmacy` i ich obsługiwane polskie nazwy, są wyszukiwane w OpenStreetMap wokół podanej lokalizacji. `radiusMeters` ustawia promień w zakresie 1–50 km. Gdy Overpass jest niedostępny, API próbuje znaleźć miejsca przez Nominatim, a `source.collectionState` oznacza taką odpowiedź jako `partial` — wynik może nie zawierać wszystkich obiektów.
+
+Wspólny format odpowiedzi opisuje pole `status`, właściwe dane w `output` oraz pochodzenie w `source`. Dokumentacja uruchomionego API: [Swagger UI](http://localhost:8000/docs) i [ReDoc](http://localhost:8000/redoc). Szczegółowy opis tras znajduje się w [referencji API](docs/api-reference.md).
 
 ## Skill dla agenta AI
 

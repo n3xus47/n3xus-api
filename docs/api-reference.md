@@ -101,6 +101,27 @@ Nazwa trasy nie oznacza, że każdy dostawca zwraca ustrukturyzowane dane znane 
 | `POST /v1/scrape/open-business/search` | `search`; opcjonalnie `location`, `maxItems` (do 50) i `radiusMeters` (1 000–50 000 m; domyślnie 10 000 m) | Dla nazw konkretnych miejsc wyszukuje w Nominatim. Dla rozpoznanych kategorii (stacje ładowania, kawiarnie, restauracje, apteki, stacje paliw, supermarkety) geokoduje `location` w Nominatim, a potem wyszukuje obiekty po tagach OSM w Overpass. Gdy Overpass jest niedostępny, szuka kategorii i lokalizacji tekstowo w Nominatim oraz odrzuca wyniki poza promieniem; taka odpowiedź ma `source.collectionState: "partial"`, bo może nie zawierać wszystkich miejsc. Nie zwraca ocen ani liczby opinii; telefon i strona WWW pojawiają się tylko, gdy są w tagach OSM. Wymaga `© OpenStreetMap contributors`. |
 | `POST /v1/scrape/google/places` | Pola wyszukiwania/lokalizacji | Przestarzały alias zgodności obsługiwany przez OpenStreetMap, a nie Google Places. Korzysta z tych samych reguł wyszukiwania co zalecana trasa `/v1/scrape/open-business/search`. |
 
+#### Wyszukiwanie miejsc według kategorii
+
+Jeśli `search` odpowiada rozpoznanej kategorii i podano `location`, API najpierw geokoduje lokalizację, a następnie wyszukuje obiekty po tagach OpenStreetMap w zadanym promieniu. Przykładowe rozpoznawane wartości `search`:
+
+- Stacje ładowania: `electric vehicle charging station`, `charging station`, `ev charger`, `stacja ładowania`, `ładowarka samochodowa`.
+- Kawiarnie: `cafe`, `coffee`, `coffee shop`, `kawiarnia`.
+- Pozostałe: `restaurant`/`restauracja`, `pharmacy`/`apteka`, `gas station`/`stacja paliw`, `supermarket`/`sklep spożywczy`.
+
+Przykładowe żądanie:
+
+```json
+{
+  "search": "coffee shop",
+  "location": "Warsaw, Poland",
+  "radiusMeters": 5000,
+  "maxItems": 5
+}
+```
+
+Rekordy są zwracane w `output.businesses`; `output.places` pozostaje aliasem tej listy dla zgodności. Jeśli Overpass nie odpowiada, adapter używa tekstowego wyszukiwania Nominatim, filtruje rekordy do promienia i ustawia `source.collectionState` na `partial`, ponieważ wynik może być niepełny. Dla zapytań o konkretną nazwę miejsca lub nieobsługiwany tekst API zachowuje wyszukiwanie Nominatim.
+
 ## Zadania przeglądarki i sesje operatora
 
 | Metoda i trasa | Wymagane pola żądania | Działanie |
