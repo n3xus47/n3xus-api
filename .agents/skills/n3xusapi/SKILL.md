@@ -2,7 +2,7 @@
 name: n3xusapi
 description: Configure and use n3xusAPI from an AI agent for public-web search, scraping, research, platform data, browser tasks, transcription, email, image generation, and local memory. Use the API's configured base URL and report source provenance and support limits.
 metadata:
-  skill-version: "local-11"
+  skill-version: "local-12"
 ---
 
 # n3xusAPI
@@ -32,6 +32,8 @@ This file is a compact router. The `references/` files are organized by user wor
 Choose local dossier mode (`POST /v1/scrape/deep`) to collect a compact multi-source dossier. Choose n3xus research (`POST /v1/research/deep`, `mode: "raw"`) to collect multi-source evidence, then synthesize the answer with citations in your response. Use website or platform scraping when the task only needs that source. Read `references/scraping.md` for the dossier recipe.
 
 Before using `POST /v1/search/web`, check whether the target has a dedicated route in this skill's table (GitHub, YouTube, X/Twitter, Instagram, TikTok, Threads, Amazon, or open-business). Prefer that route for source-specific records. Use web search for the open web or when no dedicated route exists; for example, find repositories through `POST /v1/scrape/github/search`, not a `site:github.com` query. One focused search call is normally enough because n3xusAPI fuses local providers; use `POST /v1/research/deep` when the task needs multiple search angles and cited evidence.
+
+When the user requires official or domain-specific sources, use a `site:<domain>` query with `/v1/search/web` or scrape a known official URL directly with `/v1/scrape/website`. Broad `/v1/research/deep` collection can return useful secondary sources without finding the requested primary source; `completeness: "complete"` describes collection coverage, not source quality. Do not claim primary-source support unless a returned source URL belongs to the requested domain and its page content supports the claim.
 
 **Search hits are leads.** A title or snippet is not page evidence. Scrape a candidate URL with `/v1/scrape/website` before using its page content to support an answer. Keep the search and scrape `requestId`s when both calls inform the result.
 
